@@ -134,15 +134,23 @@
     </main>
 
     <script>
-      document.getElementById("applyFilterBtn").addEventListener("click", () => {
-        // Placeholder logic for filtering - this will later use Firebase
-        const domain = document.getElementById("domainFilter").value.toLowerCase();
-        const company = document.getElementById("companyFilter").value.toLowerCase();
-        const size = document.getElementById("empSizeFilter").value.toLowerCase();
+  document.getElementById("applyFilterBtn").addEventListener("click", () => {
+    const domainInput = document.getElementById("domainFilter").value.trim().toLowerCase();
+    const companyInput = document.getElementById("companyFilter").value.trim().toLowerCase();
+    const empSizeInput = document.getElementById("empSizeFilter").value.trim().toLowerCase();
 
-        console.log("Applying filter:", { domain, company, size });
-        // Future: fetch data from Firestore using these filters
-      });
-    </script>
+    // Split input by space or comma
+    const domainFilters = domainInput.split(/[\s,]+/).filter(Boolean);
+    const companyFilters = companyInput.split(/[\s,]+/).filter(Boolean);
+    const empSizeFilters = empSizeInput.split(/[\s,]+/).filter(Boolean);
+
+    console.log("Applying bulk filters:");
+    console.log("Domains:", domainFilters);
+    console.log("Companies:", companyFilters);
+    console.log("Employee Sizes:", empSizeFilters);
+
+    // ⏳ TODO: Apply filtering from database using these filters
+  });
+</script>
   </body>
 </html>

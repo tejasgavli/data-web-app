@@ -3,52 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CSV Upload</title>
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore.js"></script>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-    }
-    #csvFileInput {
-      margin-bottom: 10px;
-    }
-    .data-table {
-      width: 100%;
-      margin-top: 20px;
-      border-collapse: collapse;
-    }
-    .data-table th, .data-table td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: left;
-    }
-  </style>
-</head>
-<body>
-
-  <h1>CSV Upload and Display</h1>
-
-  <input type="file" id="csvFileInput" />
-  <button id="uploadBtn">Upload CSV</button>
-
-  <table class="data-table" id="dataTable">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Job Title</th>
-        <th>Email</th>
-        <th>Phone</th>
-        <th>LinkedIn</th>
-        <th>Company</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
+  <title>Data Management Tool</title>
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
   <script>
     // Firebase Config
     const firebaseConfig = {
@@ -59,84 +16,95 @@
       messagingSenderId: "98848563973",
       appId: "1:98848563973:web:a1e7c051397a303b090d6c",
     };
-    
+
     // Initialize Firebase
     const app = firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore(app);
 
+    // Function to upload CSV data
     document.getElementById("uploadBtn").addEventListener("click", async () => {
       const fileInput = document.getElementById("csvFileInput");
       const file = fileInput.files[0];
-
-      if (!file) {
-        alert("Please select a CSV file.");
-        return;
-      }
+      if (!file) return alert("Please select a CSV file.");
 
       const reader = new FileReader();
-
       reader.onload = async function (e) {
         const lines = e.target.result.split("\n");
+        const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
         const data = [];
-
-        // Parse CSV data
-        lines.forEach(line => {
-          const values = line.split(",");
-          if (values.length === 6) { // Adjust length based on your CSV structure
-            const entry = {
-              name: values[0].trim(),
-              job_title: values[1].trim(),
-              email: values[2].trim(),
-              phone: values[3].trim(),
-              linkedin: values[4].trim(),
-              company: values[5].trim(),
-            };
-            data.push(entry);
-          }
-        });
-
-        // Upload data to Firebase
-        for (const entry of data) {
-          console.log("Uploading entry: ", entry); // Log each entry for debugging
-          await db.collection("contacts").add(entry);
+        
+        // Parse CSV into JSON
+        for (let i = 1; i < lines.length; i++) {
+          if (!lines[i].trim()) continue; // Skip empty rows
+          const values = lines[i].split(",");
+          const row = {};
+          headers.forEach((header, index) => {
+            row[header] = values[index]?.trim() || "";
+          });
+          data.push(row);
         }
 
-        alert("CSV data uploaded successfully!");
-        loadDataFromFirestore();
-      };
+        // Upload data to Firestore
+        try {
+          const batch = db.batch(); // Using batch for better performance
+          data.forEach(entry => {
+            const docRef = db.collection("contacts").doc(); // Create a new document with auto-generated ID
+            batch.set(docRef, entry);
+          });
 
+          // Commit the batch operation to Firestore
+          await batch.commit();
+          alert("Data uploaded successfully!");
+          loadData(); // Reload the data after successful upload
+        } catch (error) {
+          console.error("Error uploading data to Firestore:", error);
+          alert("Error uploading data. Please check the console for details.");
+        }
+      };
       reader.readAsText(file);
     });
 
-    // Function to load data from Firestore and display it
-    async function loadDataFromFirestore() {
+    // Function to load data from Firestore
+    async function loadData() {
+      const table = document.getElementById("dataTable");
+      table.innerHTML = ""; // Clear the table before reloading
       const snapshot = await db.collection("contacts").get();
-      const tableBody = document.getElementById("dataTable").getElementsByTagName("tbody")[0];
-      tableBody.innerHTML = ""; // Clear existing table data
-
       snapshot.forEach(doc => {
-        const data = doc.data();
-        const row = tableBody.insertRow();
-
-        const nameCell = row.insertCell(0);
-        const jobTitleCell = row.insertCell(1);
-        const emailCell = row.insertCell(2);
-        const phoneCell = row.insertCell(3);
-        const linkedinCell = row.insertCell(4);
-        const companyCell = row.insertCell(5);
-
-        nameCell.textContent = data.name;
-        jobTitleCell.textContent = data.job_title;
-        emailCell.textContent = data.email;
-        phoneCell.textContent = data.phone;
-        linkedinCell.textContent = data.linkedin;
-        companyCell.textContent = data.company;
+        const row = doc.data();
+        const tr = document.createElement("tr");
+        Object.keys(row).forEach(key => {
+          const td = document.createElement("td");
+          td.textContent = row[key];
+          tr.appendChild(td);
+        });
+        table.appendChild(tr);
       });
     }
 
-    // Initially load data from Firestore when page is loaded
-    loadDataFromFirestore();
+    // Load the data when the page loads
+    window.onload = loadData;
   </script>
+</head>
+<body>
+  <h1>CSV Data Upload</h1>
+  <input type="file" id="csvFileInput" accept=".csv" />
+  <button id="uploadBtn">Upload CSV</button>
 
+  <h2>Data from Firestore</h2>
+  <table border="1">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Job Title</th>
+        <th>Email</th>
+        <th>Phone</th>
+        <th>LinkedIn</th>
+        <th>Company</th>
+      </tr>
+    </thead>
+    <tbody id="dataTable">
+      <!-- Data will be populated here -->
+    </tbody>
+  </table>
 </body>
 </html>

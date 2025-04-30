@@ -1,15 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Data Upload Tool</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Upload to Firestore</title>
   <script type="module">
-    // Firebase v9 SDK import
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, query, limit } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
-    // Firebase Config (Updated)
     const firebaseConfig = {
       apiKey: "AIzaSyArvSLQwgXrK1gjk8g7QSQPCxi4BJ--QlA",
       authDomain: "data-management-tool-c849c.firebaseapp.com",
@@ -22,91 +20,51 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    document.addEventListener("DOMContentLoaded", () => {
+    window.uploadCSV = async () => {
       const fileInput = document.getElementById("csvFile");
-      const uploadBtn = document.getElementById("uploadBtn");
-      const dataTable = document.getElementById("dataTable");
+      const file = fileInput.files[0];
+      if (!file) return alert("Please select a CSV file.");
 
-      uploadBtn.addEventListener("click", async () => {
-        const file = fileInput.files[0];
-        if (!file) return alert("Please select a CSV file.");
+      const reader = new FileReader();
+      reader.onload = async function (e) {
+        const lines = e.target.result.split("\n");
+        const headers = lines[0].split(",").map(h => h.trim());
 
-        const reader = new FileReader();
-        reader.onload = async function (e) {
-          const lines = e.target.result.split("\n");
-          const headers = lines[0].split(",").map(h => h.trim());
-          const uploadPromises = [];
-
-          for (let i = 1; i < lines.length; i++) {
-            const row = lines[i].split(",").map(col => col.trim());
-            if (row.length !== headers.length || row.every(col => !col)) continue;
-
-            const data = {};
-            headers.forEach((header, index) => {
-              data[header] = row[index] || "";
+        for (let i = 1; i < lines.length; i++) {
+          const row = lines[i].split(",").map(d => d.trim());
+          if (row.length === headers.length && row.join("") !== "") {
+            let doc = {};
+            headers.forEach((h, j) => {
+              doc[h] = row[j];
             });
-
-            uploadPromises.push(addDoc(collection(db, "contacts"), data));
+            try {
+              await addDoc(collection(db, "contacts"), doc);
+            } catch (err) {
+              console.error("Error adding document: ", err);
+            }
           }
-
-          try {
-            await Promise.all(uploadPromises);
-            alert("Data uploaded successfully");
-            loadTable();
-          } catch (error) {
-            console.error("Error uploading data:", error);
-            alert("Upload failed. Check console for errors.");
-          }
-        };
-        reader.readAsText(file);
-      });
-
-      async function loadTable() {
-        const q = query(collection(db, "contacts"), limit(50));
-        const querySnapshot = await getDocs(q);
-        dataTable.innerHTML = "";
-
-        querySnapshot.forEach(doc => {
-          const row = doc.data();
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${row.name || ""}</td>
-            <td>${row.email || ""}</td>
-            <td>${row.phone || ""}</td>
-            <td>${row.company || ""}</td>
-            <td>${row.domain || ""}</td>
-          `;
-          dataTable.appendChild(tr);
-        });
-      }
-
-      loadTable();
-    });
+        }
+        alert("Data uploaded successfully");
+        fileInput.value = "";
+      };
+      reader.readAsText(file);
+    }
   </script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 40px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background-color: #f4f4f4; }
+    body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
+    .card { background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
+    input[type="file"] { margin-bottom: 10px; }
+    button { padding: 10px 15px; border: none; background: #007BFF; color: white; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #0056b3; }
   </style>
 </head>
 <body>
-  <h2>CSV Upload to Firestore</h2>
-  <input type="file" id="csvFile" accept=".csv" />
-  <button id="uploadBtn">Upload CSV</button>
-
-  <h3>Uploaded Data (showing 50 records max)</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Phone</th>
-        <th>Company</th>
-        <th>Domain</th>
-      </tr>
-    </thead>
-    <tbody id="dataTable"></tbody>
-  </table>
+  <div class="card">
+    <h2>Upload CSV to Firestore</h2>
+    <input type="file" id="csvFile" accept=".csv" />
+    <br>
+    <button onclick="uploadCSV()">Upload</button>
+  </div>
 </body>
 </html>
+

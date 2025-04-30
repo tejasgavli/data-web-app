@@ -187,9 +187,9 @@
       });
     </script>
 
-    <!-- Filter Script -->
+    <!-- Updated Filter Script to Display Data -->
     <script>
-      document.getElementById("applyFilterBtn").addEventListener("click", () => {
+      document.getElementById("applyFilterBtn").addEventListener("click", async () => {
         const domainInput = document.getElementById("domainFilter").value.trim().toLowerCase();
         const companyInput = document.getElementById("companyFilter").value.trim().toLowerCase();
         const empSizeInput = document.getElementById("empSizeFilter").value.trim().toLowerCase();
@@ -198,11 +198,35 @@
         const companyFilters = companyInput.split(/[\s,]+/).filter(Boolean);
         const empSizeFilters = empSizeInput.split(/[\s,]+/).filter(Boolean);
 
-        console.log("Domain Filters:", domainFilters);
-        console.log("Company Filters:", companyFilters);
-        console.log("Employee Size Filters:", empSizeFilters);
+        const snapshot = await db.collection("contacts").get();
+        const tableBody = document.getElementById("dataBody");
+        tableBody.innerHTML = "";
 
-        // TODO: Implement Firestore query filtering
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const domain = data.domain?.toLowerCase() || "";
+          const company = data.company?.toLowerCase() || "";
+          const phone = data.phone?.toLowerCase() || "";
+
+          const domainMatch = domainFilters.length === 0 || domainFilters.some(f => domain.includes(f));
+          const companyMatch = companyFilters.length === 0 || companyFilters.some(f => company.includes(f));
+          const empMatch = empSizeFilters.length === 0 || empSizeFilters.some(f => phone.includes(f)); // Using phone for emp size
+
+          if (domainMatch && companyMatch && empMatch) {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+              <td class="px-6 py-2">${data["first name"] || ""}</td>
+              <td class="px-6 py-2">${data["last name"] || ""}</td>
+              <td class="px-6 py-2">${data["job title"] || ""}</td>
+              <td class="px-6 py-2">${data.domain || ""}</td>
+              <td class="px-6 py-2">${data.company || ""}</td>
+              <td class="px-6 py-2">${data.email || ""}</td>
+              <td class="px-6 py-2">${data.phone || ""}</td>
+              <td class="px-6 py-2"><a href="${data.linkedin || '#'}" target="_blank">LinkedIn</a></td>
+            `;
+            tableBody.appendChild(row);
+          }
+        });
       });
     </script>
   </body>

@@ -68,28 +68,37 @@
 
     // Function to load data from Firestore and display it
     async function loadDataFromFirestore() {
-      const snapshot = await getDocs(collection(db, "contacts"));
-      const tableBody = document.getElementById("dataTable").getElementsByTagName("tbody")[0];
-      tableBody.innerHTML = ""; // Clear existing table data
+      try {
+        const snapshot = await getDocs(collection(db, "contacts"));
+        const tableBody = document.getElementById("dataTable").getElementsByTagName("tbody")[0];
+        tableBody.innerHTML = ""; // Clear existing table data
 
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const row = tableBody.insertRow();
+        if (snapshot.empty) {
+          alert("No data found in Firestore.");
+          return;
+        }
 
-        const nameCell = row.insertCell(0);
-        const jobTitleCell = row.insertCell(1);
-        const emailCell = row.insertCell(2);
-        const phoneCell = row.insertCell(3);
-        const linkedinCell = row.insertCell(4);
-        const companyCell = row.insertCell(5);
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const row = tableBody.insertRow();
 
-        nameCell.textContent = data.name;
-        jobTitleCell.textContent = data.job_title;
-        emailCell.textContent = data.email;
-        phoneCell.textContent = data.phone;
-        linkedinCell.textContent = data.linkedin;
-        companyCell.textContent = data.company;
-      });
+          const nameCell = row.insertCell(0);
+          const jobTitleCell = row.insertCell(1);
+          const emailCell = row.insertCell(2);
+          const phoneCell = row.insertCell(3);
+          const linkedinCell = row.insertCell(4);
+          const companyCell = row.insertCell(5);
+
+          nameCell.textContent = data.name || "N/A";
+          jobTitleCell.textContent = data.job_title || "N/A";
+          emailCell.textContent = data.email || "N/A";
+          phoneCell.textContent = data.phone || "N/A";
+          linkedinCell.textContent = data.linkedin || "N/A";
+          companyCell.textContent = data.company || "N/A";
+        });
+      } catch (error) {
+        console.error("Error loading data from Firestore: ", error);
+      }
     }
 
     // Initially load data from Firestore when page is loaded

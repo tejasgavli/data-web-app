@@ -3,63 +3,204 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>CSV Upload to Firestore</title>
-</head>
-<body>
-  <h2>Upload CSV</h2>
-  <input type="file" id="csvFileInput" accept=".csv" />
-  <button id="uploadBtn">Upload</button>
-
+  <title>Data Management Tool</title>
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
-    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
+    // Firebase v9 imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyArvSLQwgXrK1gjk8g7QSQPCxi4BJ--QlA",
       authDomain: "data-management-tool-c849c.firebaseapp.com",
       projectId: "data-management-tool-c849c",
-      storageBucket: "data-management-tool-c849c.firebasestorage.app",
+      storageBucket: "data-management-tool-c849c.appspot.com",
       messagingSenderId: "98848563973",
       appId: "1:98848563973:web:a1e7c051397a303b090d6c",
     };
 
+    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const contactsRef = collection(db, "contacts");
 
-    document.getElementById("uploadBtn").addEventListener("click", () => {
-      const fileInput = document.getElementById("csvFileInput");
-      const file = fileInput.files[0];
-      if (!file) return alert("Please select a CSV file.");
+    let allData = [];
 
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const text = event.target.result;
-        const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
-        const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
-        const rows = lines.slice(1);
+    // Parse CSV
+    function parseCSV(csvText) {
+      const rows = csvText.trim().split("\n");
+      const headers = rows[0].split(",").map(h => h.trim());
+      const data = [];
 
-        for (const row of rows) {
-          const values = row.split(",");
-          const data = {};
-          headers.forEach((header, i) => {
-            data[header] = values[i]?.trim() || "";
+      for (let i = 1; i < rows.length; i++) {
+        const values = rows[i].split(",").map(v => v.trim());
+        if (values.length >= 1 && values.some(val => val)) {
+          const entry = {};
+          headers.forEach((header, j) => {
+            entry[header] = values[j] || "";
           });
-
-          // Upload to Firestore
-          try {
-            await addDoc(collection(db, "contacts"), data);
-          } catch (err) {
-            console.error("Upload failed:", err);
-            alert("Upload failed: " + err.message);
-            return;
-          }
+          data.push(entry);
         }
+      }
+      return data;
+    }
 
-        alert("✅ All data uploaded to Firestore.");
-      };
+    async function uploadCSVToFirestore(data) {
+      for (const entry of data) {
+        await addDoc(contactsRef, entry);
+      }
+      alert("✅ Data uploaded successfully!");
+      fetchAndDisplayData();
+    }
 
-      reader.readAsText(file);
+    document.addEventListener("DOMContentLoaded", () => {
+      const csvInput = document.getElementById("csvInput");
+      const uploadBtn = document.getElementById("uploadBtn");
+
+      uploadBtn.addEventListener("click", () => {
+        const file = csvInput.files[0];
+        if (!file) return alert("Please select a CSV file");
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const csvText = e.target.result;
+          const data = parseCSV(csvText);
+          await uploadCSVToFirestore(data);
+        };
+        reader.readAsText(file);
+      });
+
+      setupFilters();
+      fetchAndDisplayData();
     });
+
+    async function fetchAndDisplayData() {
+      const snapshot = await getDocs(contactsRef);
+      allData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      applyFilters(); // auto-show
+    }
+
+    function applyFilters() {
+      const domain = document.getElementById("domainFilter").value.toLowerCase();
+      const company = document.getElementById("companyFilter").value.toLowerCase();
+      const employeeSize = document.getElementById("employeeFilter").value.toLowerCase();
+
+      let filtered = allData.filter(item =>
+        (!domain || (item.email || "").toLowerCase().includes(domain)) &&
+        (!company || (item.company || "").toLowerCase().includes(company)) &&
+        (!employeeSize || (item["employee size"] || "").toLowerCase().includes(employeeSize))
+      );
+
+      renderTable(filtered);
+    }
+
+    function renderTable(data) {
+      const tableBody = document.getElementById("tableBody");
+      const pagination = document.getElementById("pagination");
+      tableBody.innerHTML = "";
+      pagination.innerHTML = "";
+
+      const rowsPerPage = 50;
+      const pageCount = Math.ceil(data.length / rowsPerPage);
+      let currentPage = 1;
+
+      function showPage(page) {
+        tableBody.innerHTML = "";
+        const start = (page - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        const pageData = data.slice(start, end);
+
+        for (const item of pageData) {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${item.name || ""}</td>
+            <td>${item.title || ""}</td>
+            <td>${item.email || ""}</td>
+            <td>${item.phone || ""}</td>
+            <td>${item.linkedin || ""}</td>
+            <td>${item.company || ""}</td>
+            <td>${item["employee size"] || ""}</td>
+          `;
+          tableBody.appendChild(row);
+        }
+      }
+
+      function renderPagination() {
+        for (let i = 1; i <= pageCount; i++) {
+          const btn = document.createElement("button");
+          btn.innerText = i;
+          btn.onclick = () => {
+            currentPage = i;
+            showPage(currentPage);
+          };
+          pagination.appendChild(btn);
+        }
+      }
+
+      showPage(currentPage);
+      renderPagination();
+    }
+
+    function setupFilters() {
+      document.getElementById("applyFilters").addEventListener("click", applyFilters);
+      document.getElementById("resetFilters").addEventListener("click", () => {
+        document.getElementById("domainFilter").value = "";
+        document.getElementById("companyFilter").value = "";
+        document.getElementById("employeeFilter").value = "";
+        applyFilters();
+      });
+
+      document.getElementById("dataSearchBtn").addEventListener("click", () => {
+        document.getElementById("domainFilter").value = "";
+        document.getElementById("companyFilter").value = "";
+        document.getElementById("employeeFilter").value = "";
+        fetchAndDisplayData();
+      });
+
+      // Enter key triggers filter
+      document.querySelectorAll("input").forEach(input => {
+        input.addEventListener("keypress", (e) => {
+          if (e.key === "Enter") applyFilters();
+        });
+      });
+    }
   </script>
+</head>
+<body>
+  <h2>📁 Upload CSV to Firestore</h2>
+  <input type="file" id="csvInput" accept=".csv" />
+  <button id="uploadBtn">Upload</button>
+
+  <hr/>
+
+  <h2>🔍 Data Search</h2>
+  <button id="dataSearchBtn">Data Search</button>
+  <div>
+    <label>Domain:</label>
+    <input type="text" id="domainFilter" placeholder="e.g. gmail.com" />
+    <label>Company:</label>
+    <input type="text" id="companyFilter" placeholder="e.g. Google" />
+    <label>Employee Size:</label>
+    <input type="text" id="employeeFilter" placeholder="e.g. 1000+" />
+    <button id="applyFilters">Apply Filters</button>
+    <button id="resetFilters">Reset Filters</button>
+  </div>
+
+  <table border="1" style="margin-top: 20px; width: 100%;">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Job Title</th>
+        <th>Email</th>
+        <th>Phone</th>
+        <th>LinkedIn</th>
+        <th>Company</th>
+        <th>Employee Size</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+
+  <div id="pagination" style="margin-top: 10px;"></div>
 </body>
 </html>

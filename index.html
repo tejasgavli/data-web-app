@@ -1,262 +1,206 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CSV Upload and Display with Filters</title>
-  
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Data Management Tool</title>
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+    // Firebase v9 imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
-    // Firebase Config
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyArvSLQwgXrK1gjk8g7QSQPCxi4BJ--QlA",
       authDomain: "data-management-tool-c849c.firebaseapp.com",
       projectId: "data-management-tool-c849c",
       storageBucket: "data-management-tool-c849c.appspot.com",
       messagingSenderId: "98848563973",
-      appId: "1:98848563973:web:a1e7c051397a303b090d6c"
+      appId: "1:98848563973:web:a1e7c051397a303b090d6c",
     };
 
     // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const contactsRef = collection(db, "contacts");
 
-    // Function to upload CSV data to Firestore
-    window.uploadCSV = async () => {
-      const fileInput = document.getElementById("csvFileInput");
-      const file = fileInput.files[0];
-      if (!file) return alert("Please select a CSV file.");
+    let allData = [];
 
-      const reader = new FileReader();
-      reader.onload = async function (e) {
-        const lines = e.target.result.split("\n");
-        const data = [];
+    // Parse CSV
+    function parseCSV(csvText) {
+      const rows = csvText.trim().split("\n");
+      const headers = rows[0].split(",").map(h => h.trim());
+      const data = [];
 
-        // Parse CSV data
-        lines.forEach(line => {
-          const values = line.split(",");
-          if (values.length === 6) { // Adjust based on CSV structure
-            const entry = {
-              name: values[0].trim(),
-              job_title: values[1].trim(),
-              email: values[2].trim(),
-              phone: values[3].trim(),
-              linkedin: values[4].trim(),
-              company: values[5].trim(),
-            };
-            data.push(entry);
-          }
-        });
-
-        // Upload data to Firestore
-        for (const entry of data) {
-          try {
-            await addDoc(collection(db, "contacts"), entry);
-          } catch (err) {
-            console.error("Error adding document: ", err);
-          }
+      for (let i = 1; i < rows.length; i++) {
+        const values = rows[i].split(",").map(v => v.trim());
+        if (values.length >= 1 && values.some(val => val)) {
+          const entry = {};
+          headers.forEach((header, j) => {
+            entry[header] = values[j] || "";
+          });
+          data.push(entry);
         }
-
-        alert("CSV data uploaded successfully!");
-        loadDataFromFirestore(); // Reload data to show the latest updates
-      };
-
-      reader.readAsText(file);
-    };
-
-    // Function to load data from Firestore and display it
-    async function loadDataFromFirestore() {
-      try {
-        const snapshot = await getDocs(collection(db, "contacts"));
-        const tableBody = document.getElementById("dataTable").getElementsByTagName("tbody")[0];
-        tableBody.innerHTML = ""; // Clear existing table data
-
-        if (snapshot.empty) {
-          alert("No data found in Firestore.");
-          return;
-        }
-
-        const contacts = [];
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          contacts.push(data);
-
-          const row = tableBody.insertRow();
-          row.insertCell(0).textContent = data.name || "N/A";
-          row.insertCell(1).textContent = data.job_title || "N/A";
-          row.insertCell(2).textContent = data.email || "N/A";
-          row.insertCell(3).textContent = data.phone || "N/A";
-          row.insertCell(4).textContent = data.linkedin || "N/A";
-          row.insertCell(5).textContent = data.company || "N/A";
-        });
-
-        populateFilterOptions(contacts);
-      } catch (error) {
-        console.error("Error loading data from Firestore: ", error);
       }
+      return data;
     }
 
-    // Function to populate filter options (Company, Job Title, etc.)
-    function populateFilterOptions(contacts) {
-      const companySelect = document.getElementById("companyFilter");
-      const jobTitleSelect = document.getElementById("jobTitleFilter");
-      const domainInput = document.getElementById("domainFilter");
-
-      const companies = new Set();
-      const jobTitles = new Set();
-
-      contacts.forEach(contact => {
-        companies.add(contact.company);
-        jobTitles.add(contact.job_title);
-      });
-
-      // Populate company filter options
-      companies.forEach(company => {
-        const option = document.createElement("option");
-        option.value = company;
-        option.textContent = company;
-        companySelect.appendChild(option);
-      });
-
-      // Populate job title filter options
-      jobTitles.forEach(job => {
-        const option = document.createElement("option");
-        option.value = job;
-        option.textContent = job;
-        jobTitleSelect.appendChild(option);
-      });
+    async function uploadCSVToFirestore(data) {
+      for (const entry of data) {
+        await addDoc(contactsRef, entry);
+      }
+      alert("✅ Data uploaded successfully!");
+      fetchAndDisplayData();
     }
 
-    // Function to filter data
-    function filterData() {
-      const companyFilter = document.getElementById("companyFilter").value;
-      const jobTitleFilter = document.getElementById("jobTitleFilter").value;
-      const domainFilter = document.getElementById("domainFilter").value.toLowerCase();
+    document.addEventListener("DOMContentLoaded", () => {
+      const csvInput = document.getElementById("csvInput");
+      const uploadBtn = document.getElementById("uploadBtn");
 
-      const rows = document.getElementById("dataTable").getElementsByTagName("tbody")[0].rows;
-      Array.from(rows).forEach(row => {
-        const company = row.cells[5].textContent.toLowerCase();
-        const jobTitle = row.cells[1].textContent.toLowerCase();
-        const email = row.cells[2].textContent.toLowerCase();
+      uploadBtn.addEventListener("click", () => {
+        const file = csvInput.files[0];
+        if (!file) return alert("Please select a CSV file");
 
-        const companyMatch = companyFilter === "" || company.includes(companyFilter.toLowerCase());
-        const jobTitleMatch = jobTitleFilter === "" || jobTitle.includes(jobTitleFilter.toLowerCase());
-        const domainMatch = domainFilter === "" || email.includes(domainFilter);
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const csvText = e.target.result;
+          const data = parseCSV(csvText);
+          await uploadCSVToFirestore(data);
+        };
+        reader.readAsText(file);
+      });
 
-        if (companyMatch && jobTitleMatch && domainMatch) {
-          row.style.display = "";
-        } else {
-          row.style.display = "none";
+      setupFilters();
+      fetchAndDisplayData();
+    });
+
+    async function fetchAndDisplayData() {
+      const snapshot = await getDocs(contactsRef);
+      allData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      applyFilters(); // auto-show
+    }
+
+    function applyFilters() {
+      const domain = document.getElementById("domainFilter").value.toLowerCase();
+      const company = document.getElementById("companyFilter").value.toLowerCase();
+      const employeeSize = document.getElementById("employeeFilter").value.toLowerCase();
+
+      let filtered = allData.filter(item =>
+        (!domain || (item.email || "").toLowerCase().includes(domain)) &&
+        (!company || (item.company || "").toLowerCase().includes(company)) &&
+        (!employeeSize || (item["employee size"] || "").toLowerCase().includes(employeeSize))
+      );
+
+      renderTable(filtered);
+    }
+
+    function renderTable(data) {
+      const tableBody = document.getElementById("tableBody");
+      const pagination = document.getElementById("pagination");
+      tableBody.innerHTML = "";
+      pagination.innerHTML = "";
+
+      const rowsPerPage = 50;
+      const pageCount = Math.ceil(data.length / rowsPerPage);
+      let currentPage = 1;
+
+      function showPage(page) {
+        tableBody.innerHTML = "";
+        const start = (page - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        const pageData = data.slice(start, end);
+
+        for (const item of pageData) {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${item.name || ""}</td>
+            <td>${item.title || ""}</td>
+            <td>${item.email || ""}</td>
+            <td>${item.phone || ""}</td>
+            <td>${item.linkedin || ""}</td>
+            <td>${item.company || ""}</td>
+            <td>${item["employee size"] || ""}</td>
+          `;
+          tableBody.appendChild(row);
         }
+      }
+
+      function renderPagination() {
+        for (let i = 1; i <= pageCount; i++) {
+          const btn = document.createElement("button");
+          btn.innerText = i;
+          btn.onclick = () => {
+            currentPage = i;
+            showPage(currentPage);
+          };
+          pagination.appendChild(btn);
+        }
+      }
+
+      showPage(currentPage);
+      renderPagination();
+    }
+
+    function setupFilters() {
+      document.getElementById("applyFilters").addEventListener("click", applyFilters);
+      document.getElementById("resetFilters").addEventListener("click", () => {
+        document.getElementById("domainFilter").value = "";
+        document.getElementById("companyFilter").value = "";
+        document.getElementById("employeeFilter").value = "";
+        applyFilters();
+      });
+
+      document.getElementById("dataSearchBtn").addEventListener("click", () => {
+        document.getElementById("domainFilter").value = "";
+        document.getElementById("companyFilter").value = "";
+        document.getElementById("employeeFilter").value = "";
+        fetchAndDisplayData();
+      });
+
+      // Enter key triggers filter
+      document.querySelectorAll("input").forEach(input => {
+        input.addEventListener("keypress", (e) => {
+          if (e.key === "Enter") applyFilters();
+        });
       });
     }
-
-    // Event listeners for filter changes
-    document.getElementById("companyFilter").addEventListener("change", filterData);
-    document.getElementById("jobTitleFilter").addEventListener("change", filterData);
-    document.getElementById("domainFilter").addEventListener("input", filterData);
-
-    // Initially load data from Firestore when page is loaded
-    loadDataFromFirestore();
   </script>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      display: flex;
-    }
-
-    .filter-panel {
-      width: 250px;
-      padding-right: 20px;
-    }
-
-    .filter-panel select,
-    .filter-panel input {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 5px;
-      border: 1px solid #ddd;
-    }
-
-    .filter-panel label {
-      font-weight: bold;
-    }
-
-    .data-table {
-      width: 100%;
-      margin-top: 20px;
-      border-collapse: collapse;
-      margin-left: 20px;
-    }
-
-    .data-table th,
-    .data-table td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: left;
-    }
-
-    button {
-      padding: 10px 15px;
-      border: none;
-      background: #007BFF;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #0056b3;
-    }
-  </style>
 </head>
 <body>
+  <h2>📁 Upload CSV to Firestore</h2>
+  <input type="file" id="csvInput" accept=".csv" />
+  <button id="uploadBtn">Upload</button>
 
-  <!-- Filter Panel -->
-  <div class="filter-panel">
-    <h3>Filters</h3>
-    <label for="companyFilter">Company</label>
-    <select id="companyFilter">
-      <option value="">All Companies</option>
-    </select>
+  <hr/>
 
-    <label for="jobTitleFilter">Job Title</label>
-    <select id="jobTitleFilter">
-      <option value="">All Job Titles</option>
-    </select>
-
-    <label for="domainFilter">Domain</label>
-    <input type="text" id="domainFilter" placeholder="Search by domain (e.g., gmail.com)" />
-  </div>
-
-  <!-- Main Content -->
+  <h2>🔍 Data Search</h2>
+  <button id="dataSearchBtn">Data Search</button>
   <div>
-    <h1>CSV Upload and Display</h1>
-
-    <!-- File upload form -->
-    <input type="file" id="csvFileInput" accept=".csv" />
-    <button onclick="uploadCSV()">Upload CSV</button>
-
-    <!-- Table to display uploaded data -->
-    <table class="data-table" id="dataTable">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Job Title</th>
-          <th>Email</th>
-          <th>Phone</th>
-          <th>LinkedIn</th>
-          <th>Company</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <label>Domain:</label>
+    <input type="text" id="domainFilter" placeholder="e.g. gmail.com" />
+    <label>Company:</label>
+    <input type="text" id="companyFilter" placeholder="e.g. Google" />
+    <label>Employee Size:</label>
+    <input type="text" id="employeeFilter" placeholder="e.g. 1000+" />
+    <button id="applyFilters">Apply Filters</button>
+    <button id="resetFilters">Reset Filters</button>
   </div>
 
+  <table border="1" style="margin-top: 20px; width: 100%;">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Job Title</th>
+        <th>Email</th>
+        <th>Phone</th>
+        <th>LinkedIn</th>
+        <th>Company</th>
+        <th>Employee Size</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+
+  <div id="pagination" style="margin-top: 10px;"></div>
 </body>
 </html>

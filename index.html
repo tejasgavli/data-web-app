@@ -1,226 +1,270 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Data Management Tool</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons.css" rel="stylesheet" />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Data Management Tool</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <style>
+    .loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
 
-    <style>
-      .loading {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(255, 255, 255, 0.8);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-      }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
 
-      .loading-spinner {
-        width: 50px;
-        height: 50px;
-        border: 5px solid #f3f3f3;
-        border-top: 5px solid #3498db;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
+    .filter-panel {
+      height: calc(100vh - 64px);
+      overflow-y: auto;
+    }
+  </style>
+</head>
 
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
-      }
+<body class="bg-gray-100">
+  <div class="loading hidden" id="loadingIndicator">
+    <div class="loading-spinner"></div>
+  </div>
 
-      .filter-panel {
-        height: calc(100vh - 64px);
-        overflow-y: auto;
-      }
-    </style>
-  </head>
+  <header class="bg-white shadow-md p-4 flex justify-between items-center">
+    <h1 class="text-xl font-bold text-gray-700">Data Management Tool</h1>
+    <button id="dataSearchBtn" class="text-blue-600 hover:underline">Data Search</button>
+  </header>
 
-  <body class="bg-gray-100">
-    <div class="loading hidden" id="loadingIndicator">
-      <div class="loading-spinner"></div>
-    </div>
+  <main class="p-4 grid grid-cols-4 gap-4">
+    <!-- Filter Panel -->
+    <section class="bg-white p-4 rounded shadow col-span-1 filter-panel">
+      <h2 class="text-lg font-semibold mb-4">Filters</h2>
 
-    <header class="bg-white shadow-md p-4 flex justify-between items-center">
-      <h1 class="text-xl font-bold text-gray-700">Data Management Tool</h1>
-    </header>
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1" for="domainFilter">Domain</label>
+        <input id="domainFilter" type="text" class="w-full p-2 border border-gray-300 rounded" placeholder="e.g. gmail.com bgcd.com"/>
+      </div>
 
-    <main class="p-4 grid grid-cols-4 gap-4">
-      <!-- Filter Panel -->
-      <section class="bg-white p-4 rounded shadow col-span-1 filter-panel">
-        <h2 class="text-lg font-semibold mb-4">Filters</h2>
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1" for="companyFilter">Company</label>
+        <input id="companyFilter" type="text" class="w-full p-2 border border-gray-300 rounded" placeholder="e.g. Microsoft Amazon"/>
+      </div>
 
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 mb-1" for="domainFilter">Domain</label>
-          <input
-            type="text"
-            id="domainFilter"
-            placeholder="e.g. gmail.com bgcd.com"
-            class="w-full p-2 border border-gray-300 rounded"
-          />
-        </div>
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1" for="empSizeFilter">Employee Size</label>
+        <input id="empSizeFilter" type="text" class="w-full p-2 border border-gray-300 rounded" placeholder="e.g. 100-500 1000+"/>
+      </div>
 
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 mb-1" for="companyFilter">Company</label>
-          <input
-            type="text"
-            id="companyFilter"
-            placeholder="e.g. Microsoft Amazon"
-            class="w-full p-2 border border-gray-300 rounded"
-          />
-        </div>
+      <button id="resetBtn" class="w-full bg-gray-500 text-white py-2 rounded hover:bg-gray-600 mt-4">
+        Reset Filters
+      </button>
+    </section>
 
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 mb-1" for="empSizeFilter">Employee Size</label>
-          <input
-            type="text"
-            id="empSizeFilter"
-            placeholder="e.g. 100-500 1000+"
-            class="w-full p-2 border border-gray-300 rounded"
-          />
-        </div>
-
-        <button
-          id="applyFilterBtn"
-          class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-        >
-          Apply Filters
+    <!-- Data Panel -->
+    <section class="col-span-3">
+      <!-- Upload CSV -->
+      <div class="bg-white p-4 rounded shadow mb-4">
+        <h2 class="text-lg font-semibold mb-4">Upload CSV</h2>
+        <input type="file" id="csvFileInput" accept=".csv" class="mb-2" />
+        <button id="uploadBtn" class="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700">
+          Upload
         </button>
-      </section>
+      </div>
 
-      <!-- Data Panel -->
-      <section class="col-span-3">
-        <!-- Upload CSV -->
-        <div class="bg-white p-4 rounded shadow mb-4">
-          <h2 class="text-lg font-semibold mb-4">Upload CSV</h2>
-          <input type="file" id="csvFileInput" accept=".csv" class="mb-2" />
-          <button id="uploadBtn" class="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700">
-            Upload
-          </button>
+      <!-- Results Table -->
+      <div class="bg-white p-4 rounded shadow">
+        <h2 class="text-lg font-semibold mb-4">Results</h2>
+        <div id="resultTable" class="overflow-x-auto">
+          <table class="min-w-full text-sm text-left text-gray-500">
+            <thead class="bg-gray-100 text-xs text-gray-700 uppercase">
+              <tr>
+                <th class="px-6 py-3">First Name</th>
+                <th class="px-6 py-3">Last Name</th>
+                <th class="px-6 py-3">Job Title</th>
+                <th class="px-6 py-3">Domain</th>
+                <th class="px-6 py-3">Company</th>
+                <th class="px-6 py-3">Email</th>
+                <th class="px-6 py-3">Phone</th>
+                <th class="px-6 py-3">LinkedIn</th>
+              </tr>
+            </thead>
+            <tbody id="dataBody"></tbody>
+          </table>
         </div>
-
-        <!-- Results Table -->
-        <div class="bg-white p-4 rounded shadow">
-          <h2 class="text-lg font-semibold mb-4">Results</h2>
-          <div id="resultTable" class="overflow-x-auto">
-            <table class="min-w-full text-sm text-left text-gray-500">
-              <thead class="bg-gray-100 text-xs text-gray-700 uppercase">
-                <tr>
-                  <th class="px-6 py-3">First Name</th>
-                  <th class="px-6 py-3">Last Name</th>
-                  <th class="px-6 py-3">Job Title</th>
-                  <th class="px-6 py-3">Domain</th>
-                  <th class="px-6 py-3">Company</th>
-                  <th class="px-6 py-3">Email</th>
-                  <th class="px-6 py-3">Phone</th>
-                  <th class="px-6 py-3">LinkedIn</th>
-                </tr>
-              </thead>
-              <tbody id="dataBody">
-                <!-- Data rows go here -->
-              </tbody>
-            </table>
-          </div>
+        <div class="flex justify-between items-center mt-4">
+          <button id="prevPage" class="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50">Previous</button>
+          <span id="pageInfo" class="text-sm text-gray-600"></span>
+          <button id="nextPage" class="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50">Next</button>
         </div>
-      </section>
-    </main>
+      </div>
+    </section>
+  </main>
 
-    <!-- Firebase Config and Scripts -->
-    <script>
-      const firebaseConfig = {
-        apiKey: "AIzaSyArvSLQwgXrK1gjk8g7QSQPCxi4BJ--QlA",
-        authDomain: "data-management-tool-c849c.firebaseapp.com",
-        projectId: "data-management-tool-c849c",
-        storageBucket: "data-management-tool-c849c.firebasestorage.app",
-        messagingSenderId: "98848563973",
-        appId: "1:98848563973:web:a1e7c051397a303b090d6c"
+  <!-- Firebase Setup -->
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyArvSLQwgXrK1gjk8g7QSQPCxi4BJ--QlA",
+      authDomain: "data-management-tool-c849c.firebaseapp.com",
+      projectId: "data-management-tool-c849c",
+      storageBucket: "data-management-tool-c849c.appspot.com",
+      messagingSenderId: "98848563973",
+      appId: "1:98848563973:web:a1e7c051397a303b090d6c"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+  </script>
+
+  <!-- Script for Uploading CSV -->
+  <script>
+    document.getElementById("uploadBtn").addEventListener("click", async () => {
+      const fileInput = document.getElementById("csvFileInput");
+      const file = fileInput.files[0];
+      if (!file) return alert("Please select a CSV file.");
+      const reader = new FileReader();
+      reader.onload = async function (e) {
+        const lines = e.target.result.split("\n");
+        const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+        const data = [];
+        for (let i = 1; i < lines.length; i++) {
+          if (!lines[i].trim()) continue;
+          const values = lines[i].split(",");
+          const row = {};
+          headers.forEach((header, index) => {
+            row[header] = values[index]?.trim() || "";
+          });
+          data.push(row);
+        }
+        for (const entry of data) {
+          await db.collection("contacts").add(entry);
+        }
+        alert("Data uploaded successfully!");
+        loadData();
       };
-
-      firebase.initializeApp(firebaseConfig);
-      const db = firebase.firestore();
-    </script>
-
-    <!-- Upload Script -->
-    <script>
-      document.getElementById("uploadBtn").addEventListener("click", async () => {
-        const fileInput = document.getElementById("csvFileInput");
-        const file = fileInput.files[0];
-        if (!file) return alert("Please select a CSV file.");
-
-        const reader = new FileReader();
-        reader.onload = async function (e) {
-          const lines = e.target.result.split("\n");
-          const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
-          const data = [];
-
-          for (let i = 1; i < lines.length; i++) {
-            if (!lines[i].trim()) continue;
-            const values = lines[i].split(",");
-            const row = {};
-            headers.forEach((header, index) => {
-              row[header] = values[index]?.trim() || "";
-            });
-            data.push(row);
-          }
-
-          for (const entry of data) {
-            await db.collection("contacts").add(entry);
-          }
-
-          alert("Data uploaded successfully!");
-        };
-        reader.readAsText(file);
-      });
-    </script>
-
-    <!-- Updated Filter Script to Display Data -->
-    <script>
-  document.getElementById("applyFilterBtn").addEventListener("click", async () => {
-    // Get selected filter tags — adjust selector to your actual tags if needed
-    const companyTags = Array.from(document.querySelectorAll('.filter-panel .bg-gray-200'));
-    const companyFilters = companyTags.map(tag => tag.textContent.replace("×", "").trim().toLowerCase());
-
-    const snapshot = await db.collection("contacts").get();
-    const tableBody = document.getElementById("dataBody");
-    tableBody.innerHTML = "";
-
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      const company = (data.company || "").toLowerCase();
-
-      const companyMatch = companyFilters.length === 0 || companyFilters.some(f => company.includes(f));
-
-      if (companyMatch) {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td class="px-6 py-2">${data["first name"] || ""}</td>
-          <td class="px-6 py-2">${data["last name"] || ""}</td>
-          <td class="px-6 py-2">${data["job title"] || ""}</td>
-          <td class="px-6 py-2">${data.domain || ""}</td>
-          <td class="px-6 py-2">${data.company || ""}</td>
-          <td class="px-6 py-2">${data.email || ""}</td>
-          <td class="px-6 py-2">${data.phone || ""}</td>
-          <td class="px-6 py-2"><a href="${data.linkedin || '#'}" target="_blank">LinkedIn</a></td>
-        `;
-        tableBody.appendChild(row);
-      }
+      reader.readAsText(file);
     });
-  });
-</script>
+  </script>
 
-  </body>
+  <!-- Script for Filtering & Pagination -->
+  <script>
+    let allData = [];
+    let filteredData = [];
+    let currentPage = 1;
+    const rowsPerPage = 50;
+
+    const domainInput = document.getElementById("domainFilter");
+    const companyInput = document.getElementById("companyFilter");
+    const empSizeInput = document.getElementById("empSizeFilter");
+    const dataBody = document.getElementById("dataBody");
+    const pageInfo = document.getElementById("pageInfo");
+
+    async function loadData() {
+      const snapshot = await db.collection("contacts").get();
+      allData = snapshot.docs.map(doc => doc.data());
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const domainFilters = domainInput.value.toLowerCase().split(/[\s,]+/).filter(Boolean);
+      const companyFilters = companyInput.value.toLowerCase().split(/[\s,]+/).filter(Boolean);
+      const empSizeFilters = empSizeInput.value.toLowerCase().split(/[\s,]+/).filter(Boolean);
+
+      filteredData = allData.filter(entry => {
+        const domain = (entry.domain || "").toLowerCase();
+        const company = (entry.company || "").toLowerCase();
+        const empSize = (entry["employee size"] || "").toLowerCase();
+
+        const domainMatch = !domainFilters.length || domainFilters.some(filter => domain.includes(filter));
+        const companyMatch = !companyFilters.length || companyFilters.some(filter => company.includes(filter));
+        const empSizeMatch = !empSizeFilters.length || empSizeFilters.some(filter => empSize.includes(filter));
+
+        return domainMatch && companyMatch && empSizeMatch;
+      });
+
+      currentPage = 1;
+      renderTable();
+    }
+
+    function renderTable() {
+      const start = (currentPage - 1) * rowsPerPage;
+      const paginatedData = filteredData.slice(start, start + rowsPerPage);
+      dataBody.innerHTML = "";
+      paginatedData.forEach(entry => {
+        dataBody.innerHTML += `
+          <tr>
+            <td class="px-6 py-2">${entry["first name"] || ""}</td>
+            <td class="px-6 py-2">${entry["last name"] || ""}</td>
+            <td class="px-6 py-2">${entry["job title"] || ""}</td>
+            <td class="px-6 py-2">${entry["domain"] || ""}</td>
+            <td class="px-6 py-2">${entry["company"] || ""}</td>
+            <td class="px-6 py-2">${entry["email"] || ""}</td>
+            <td class="px-6 py-2">${entry["phone"] || ""}</td>
+            <td class="px-6 py-2">${entry["linkedin"] || ""}</td>
+          </tr>`;
+      });
+
+      pageInfo.textContent = `Page ${currentPage} of ${Math.ceil(filteredData.length / rowsPerPage)}`;
+      document.getElementById("prevPage").disabled = currentPage === 1;
+      document.getElementById("nextPage").disabled = start + rowsPerPage >= filteredData.length;
+    }
+
+    // Pagination buttons
+    document.getElementById("prevPage").onclick = () => {
+      if (currentPage > 1) {
+        currentPage--;
+        renderTable();
+      }
+    };
+
+    document.getElementById("nextPage").onclick = () => {
+      if ((currentPage * rowsPerPage) < filteredData.length) {
+        currentPage++;
+        renderTable();
+      }
+    };
+
+    // Trigger filters on Enter key
+    [domainInput, companyInput, empSizeInput].forEach(input => {
+      input.addEventListener("keypress", e => {
+        if (e.key === "Enter") applyFilters();
+      });
+    });
+
+    // Reset Filters Button
+    document.getElementById("resetBtn").onclick = () => {
+      domainInput.value = "";
+      companyInput.value = "";
+      empSizeInput.value = "";
+      applyFilters();
+    };
+
+    // Data Search Button (Top Right)
+    document.getElementById("dataSearchBtn").onclick = () => {
+      domainInput.value = "";
+      companyInput.value = "";
+      empSizeInput.value = "";
+      loadData();
+    };
+
+    // Initial load
+    loadData();
+  </script>
+</body>
 </html>

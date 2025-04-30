@@ -6,20 +6,14 @@
   <title>CSV Upload to Firestore</title>
 </head>
 <body>
-  <h1>Upload CSV to Firestore</h1>
-  <input type="file" id="csvFileInput" accept=".csv"/>
-  <button id="uploadBtn">Upload CSV</button>
+  <h2>Upload CSV</h2>
+  <input type="file" id="csvFileInput" accept=".csv" />
+  <button id="uploadBtn">Upload</button>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
-    import {
-      getFirestore,
-      collection,
-      doc,
-      setDoc
-    } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
 
-    // ✅ Your Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyArvSLQwgXrK1gjk8g7QSQPCxi4BJ--QlA",
       authDomain: "data-management-tool-c849c.firebaseapp.com",
@@ -29,39 +23,39 @@
       appId: "1:98848563973:web:a1e7c051397a303b090d6c",
     };
 
-    // ✅ Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // ✅ Handle CSV Upload
-    document.getElementById("uploadBtn").addEventListener("click", async () => {
+    document.getElementById("uploadBtn").addEventListener("click", () => {
       const fileInput = document.getElementById("csvFileInput");
       const file = fileInput.files[0];
       if (!file) return alert("Please select a CSV file.");
 
       const reader = new FileReader();
       reader.onload = async (event) => {
-        const csv = event.target.result;
-        const lines = csv.split("\n").map(line => line.trim()).filter(line => line.length > 0);
+        const text = event.target.result;
+        const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
         const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+        const rows = lines.slice(1);
 
-        const dataRows = lines.slice(1);
+        for (const row of rows) {
+          const values = row.split(",");
+          const data = {};
+          headers.forEach((header, i) => {
+            data[header] = values[i]?.trim() || "";
+          });
 
-        try {
-          for (const line of dataRows) {
-            const values = line.split(",");
-            const data = {};
-            headers.forEach((header, i) => {
-              data[header] = values[i]?.trim() || "";
-            });
-            const docRef = doc(collection(db, "contacts"));
-            await setDoc(docRef, data);
+          // Upload to Firestore
+          try {
+            await addDoc(collection(db, "contacts"), data);
+          } catch (err) {
+            console.error("Upload failed:", err);
+            alert("Upload failed: " + err.message);
+            return;
           }
-          alert("✅ Data uploaded successfully!");
-        } catch (error) {
-          console.error("Upload error:", error);
-          alert("❌ Error uploading data.");
         }
+
+        alert("✅ All data uploaded to Firestore.");
       };
 
       reader.readAsText(file);

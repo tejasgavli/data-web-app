@@ -126,6 +126,7 @@
             <td class="p-2">${item.company || ""}</td>
             <td class="p-2">${item["employee Size"] || ""}</td>
             <td class="p-2">${item.domain || ""}</td>
+            <td class="p-2">${item.location || ""}</td>
           `;
           tableBody.appendChild(row);
         }
@@ -189,6 +190,10 @@
         <label class="block font-medium">Employee Size:</label>
         <input type="text" id="employeeFilter" placeholder="e.g. 1000+" class="w-full border p-2 rounded" />
       </div>
+      <div class="mb-3">
+  <label class="block font-medium">Location:</label>
+  <input type="text" id="locationFilter" placeholder="e.g. San Francisco" class="w-full border p-2 rounded" />
+</div>
       <div class="flex gap-2 mt-4">
         <button id="applyFilters" class="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600">Apply</button>
         <button id="resetFilters" class="bg-gray-500 text-white px-4 py-1 rounded hover:bg-gray-600">Reset</button>
@@ -220,6 +225,7 @@
               <th class="p-2">Company</th>
               <th class="p-2">Employee Size</th>
               <th class="p-2">Domain</th>
+              <th class="p-2">Location</th>
             </tr>
           </thead>
           <tbody id="tableBody" class="divide-y"></tbody>

@@ -216,24 +216,24 @@
       <button id="uploadBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Upload</button>
     </div>
 
-    <div class="overflow-auto">
-      <table class="table-auto w-full border border-gray-300 bg-white">
-        <thead class="bg-gray-200">
-          <tr>
-            <th class="p-2">First Name</th>
-            <th class="p-2">Last Name</th>
-            <th class="p-2">Job Title</th>
-            <th class="p-2">Email</th>
-            <th class="p-2">Phone</th>
-            <th class="p-2">LinkedIn</th>
-            <th class="p-2">Company</th>
-            <th class="p-2">Employee Size</th>
-            <th class="p-2">Domain</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-      </table>
-    </div>
+    <div style="overflow-x: auto; max-width: 100%;">
+  <table border="1" style="margin-top: 20px; width: max-content; min-width: 100%;">
+    <thead>
+      <tr>
+        <th class="p-2">First Name</th>
+        <th class="p-2">Last Name</th>
+        <th class="p-2">Job Title</th>
+        <th class="p-2">Email</th>
+        <th class="p-2">Phone</th>
+        <th class="p-2">LinkedIn</th>
+        <th class="p-2">Company</th>
+        <th class="p-2">Employee Size</th>
+        <th class="p-2">Domain</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
 
     <div id="pagination" class="mt-4 flex flex-wrap gap-2"></div>
   </div>

@@ -1,306 +1,233 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Data Management Tool</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyArvSLQwgXrK1gjk8g7QSQPCxi4BJ--QlA",
-      authDomain: "data-management-tool-c849c.firebaseapp.com",
-      projectId: "data-management-tool-c849c",
-      storageBucket: "data-management-tool-c849c.appspot.com",
-      messagingSenderId: "98848563973",
-      appId: "1:98848563973:web:a1e7c051397a303b090d6c",
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const contactsRef = collection(db, "contacts");
-
-    let allData = [];
-
-    function parseCSV(csvText) {
-      const rows = csvText.trim().split("\n");
-      const headers = rows[0].split(",").map(h => h.trim());
-      const data = [];
-
-      for (let i = 1; i < rows.length; i++) {
-        const values = rows[i].split(",").map(v => v.trim());
-        if (values.length >= 1 && values.some(val => val)) {
-          const entry = {};
-          headers.forEach((header, j) => {
-            entry[header] = values[j] || "";
-          });
-          data.push(entry);
-        }
-      }
-      return data;
-    }
-
-    async function uploadCSVToFirestore(data) {
-      for (const entry of data) {
-        try {
-          await addDoc(contactsRef, entry);
-          console.log("✅ Entry added:", entry);
-        } catch (err) {
-          console.error("❌ Failed to upload entry:", entry, err);
-        }
-      }
-      alert("✅ Data uploaded successfully!");
-      fetchAndDisplayData();
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      const csvInput = document.getElementById("csvInput");
-      const uploadBtn = document.getElementById("uploadBtn");
-
-      uploadBtn.addEventListener("click", () => {
-        const file = csvInput.files[0];
-        if (!file) return alert("Please select a CSV file");
-
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          const csvText = e.target.result;
-          const data = parseCSV(csvText);
-          console.log("Parsed CSV data:", data);
-          await uploadCSVToFirestore(data);
-        };
-        reader.readAsText(file);
-      });
-
-      setupFilters();
-      fetchAndDisplayData();
-    });
-
-    async function fetchAndDisplayData() {
-      const snapshot = await getDocs(contactsRef);
-      allData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      applyFilters();
-    }
-function parseFilterInput(input) {
-  return input
-    .split(/[\n,]+/)         // Split on commas or newlines
-    .map(val => val.trim().toLowerCase())
-    .filter(val => val);     // Remove empty values
-}
-
-function applyFilters() {
-  const domainList = parseFilterInput(document.getElementById("domainFilter").value);
-  const companyList = parseFilterInput(document.getElementById("companyFilter").value);
-  const employeeSizeList = parseFilterInput(document.getElementById("employeeFilter").value);
-  const locationList = parseFilterInput(document.getElementById("locationFilter").value);
-
-  let filtered = allData.filter(item => {
-    const email = (item.email || "").toLowerCase();
-    const company = (item.company || "").toLowerCase();
-    const employeeSize = (item["employee Size"] || "").toLowerCase();
-    const location = (item.location || "").toLowerCase();
-
-    const domainMatch = domainList.length === 0 || domainList.some(val => email.includes(val));
-    const companyMatch = companyList.length === 0 || companyList.some(val => company.includes(val));
-    const employeeMatch = employeeSizeList.length === 0 || employeeSizeList.some(val => employeeSize.includes(val));
-    const locationMatch = locationList.length === 0 || locationList.some(val => location.includes(val));
-
-    return domainMatch && companyMatch && employeeMatch && locationMatch;
-  });
-
-  renderTable(filtered);
-}
-   
-
-    function renderTable(data) {
-      const tableBody = document.getElementById("tableBody");
-      const pagination = document.getElementById("pagination");
-      tableBody.innerHTML = "";
-      pagination.innerHTML = "";
-
-      const rowsPerPage = 50;
-      const pageCount = Math.ceil(data.length / rowsPerPage);
-      let currentPage = 1;
-
-      function showPage(page) {
-        tableBody.innerHTML = "";
-        const start = (page - 1) * rowsPerPage;
-        const end = start + rowsPerPage;
-        const pageData = data.slice(start, end);
-
-        for (const item of pageData) {
-          const row = document.createElement("tr");
-          row.classList.add("border-b");
-          row.innerHTML = `
-            <td class="p-2">${item["first name"] || ""}</td>
-            <td class="p-2">${item["last name"] || ""}</td>
-            <td class="p-2">${item["job title"] || ""}</td>
-            <td class="p-2">${item.email || ""}</td>
-            <td class="p-2">${item.phone || ""}</td>
-            <td class="p-2">${item.linkedin || ""}</td>
-            <td class="p-2">${item.company || ""}</td>
-            <td class="p-2">${item["employee Size"] || ""}</td>
-            <td class="p-2">${item.domain || ""}</td>
-            <td class="p-2">${item.location || ""}</td>
-          `;
-          tableBody.appendChild(row);
-        }
-      }
-
-      function renderPagination() {
-        for (let i = 1; i <= pageCount; i++) {
-          const btn = document.createElement("button");
-          btn.innerText = i;
-          btn.className = "px-3 py-1 m-1 border rounded hover:bg-gray-200";
-          btn.onclick = () => {
-            currentPage = i;
-            showPage(currentPage);
-          };
-          pagination.appendChild(btn);
-        }
-      }
-
-      showPage(currentPage);
-      renderPagination();
-    }
-
-    function setupFilters() {
-      document.getElementById("applyFilters").addEventListener("click", applyFilters);
-      document.getElementById("resetFilters").addEventListener("click", () => {
-        document.getElementById("domainFilter").value = "";
-        document.getElementById("companyFilter").value = "";
-        document.getElementById("employeeFilter").value = "";
-        applyFilters();
-      });
-
-      document.getElementById("dataSearchBtn").addEventListener("click", () => {
-        document.getElementById("domainFilter").value = "";
-        document.getElementById("companyFilter").value = "";
-        document.getElementById("employeeFilter").value = "";
-        fetchAndDisplayData();
-      });
-
-      document.querySelectorAll("input").forEach(input => {
-        input.addEventListener("keypress", (e) => {
-          if (e.key === "Enter") applyFilters();
-        });
-      });
-    }
-    <script>
-  const jobTitleInput = document.getElementById("jobTitleInput");
-  const jobTitleBox = document.getElementById("jobTitleFilterBox");
-  let jobTitleTags = [];
-
-  jobTitleInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && jobTitleInput.value.trim() !== "") {
-      e.preventDefault();
-      const value = jobTitleInput.value.trim();
-      if (!jobTitleTags.includes(value.toLowerCase())) {
-        jobTitleTags.push(value.toLowerCase());
-        addJobTitleTag(value);
-        jobTitleInput.value = "";
-      }
-    }
-  });
-
-  function addJobTitleTag(text) {
-    const tag = document.createElement("span");
-    tag.className = "bg-blue-100 text-blue-800 px-2 py-1 rounded flex items-center";
-    tag.innerHTML = `
-      ${text}
-      <button class="ml-2 text-red-600 hover:text-red-800 font-bold" onclick="removeJobTitleTag('${text.toLowerCase()}')">&times;</button>
-    `;
-    jobTitleBox.insertBefore(tag, jobTitleInput);
-  }
-
-  window.removeJobTitleTag = function(text) {
-    jobTitleTags = jobTitleTags.filter((tag) => tag !== text);
-    const tags = jobTitleBox.querySelectorAll("span");
-    tags.forEach((el) => {
-      if (el.textContent.includes(text)) el.remove();
-    });
+  const firebaseConfig = {
+    apiKey: "AIzaSyArvSLQwgXrK1gjk8g7QSQPCxi4BJ--QlA",
+    authDomain: "data-management-tool-c849c.firebaseapp.com",
+    projectId: "data-management-tool-c849c",
+    storageBucket: "data-management-tool-c849c.appspot.com",
+    messagingSenderId: "98848563973",
+    appId: "1:98848563973:web:a1e7c051397a303b090d6c",
   };
 
-  // Later, when filtering:
-  function getJobTitleTags() {
-    return jobTitleTags;
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const contactsRef = collection(db, "contacts");
+
+  let allData = [];
+  let jobTitleTags = [];
+
+  function parseCSV(csvText) {
+    const rows = csvText.trim().split("\n");
+    const headers = rows[0].split(",").map(h => h.trim());
+    const data = [];
+
+    for (let i = 1; i < rows.length; i++) {
+      const values = rows[i].split(",").map(v => v.trim());
+      if (values.length >= 1 && values.some(val => val)) {
+        const entry = {};
+        headers.forEach((header, j) => {
+          entry[header] = values[j] || "";
+        });
+        data.push(entry);
+      }
+    }
+    return data;
   }
-  </script>
-</head>
-<body class="bg-gray-50 text-gray-800">
-  <div class="flex h-screen overflow-hidden">
-    <!-- Sidebar Filters -->
-    <div class="w-64 bg-white border-r p-4">
-      <h3 class="text-lg font-semibold mb-4">🔍 Filters</h3>
-      <div class="mb-3">
-        <label class="block font-medium">Domain:</label>
-        <input type="text" id="domainFilter" placeholder="e.g. gmail.com" class="w-full border p-2 rounded" />
-      </div>
-      <div class="mb-3">
-        <label class="block font-medium">Company:</label>
-        <input type="text" id="companyFilter" placeholder="e.g. Google" class="w-full border p-2 rounded" />
-      </div>
-      <label for="jobTitleInput">Job Title:</label>
-<div id="jobTitleFilterBox" class="w-full border p-2 rounded min-h-[42px] flex flex-wrap items-center gap-2 bg-white">
-  <input
-    type="text"
-    id="jobTitleInput"
-    placeholder="Type and hit Enter"
-    class="flex-grow border-none outline-none"
-  />
-</div>
-<div id="jobTitleTags" style="margin-top: 5px; display: flex; flex-wrap: wrap; gap: 5px;"></div>
 
-      <div class="mb-3">
-        <label class="block font-medium">Employee Size:</label>
-        <input type="text" id="employeeFilter" placeholder="e.g. 1000+" class="w-full border p-2 rounded" />
-      </div>
-     <div class="mb-3">
-  <label class="block font-medium">Location:</label>
-  <input type="text" id="locationFilter" placeholder="e.g. New York, London" class="w-full border p-2 rounded" />
-</div>
+  async function uploadCSVToFirestore(data) {
+    for (const entry of data) {
+      try {
+        await addDoc(contactsRef, entry);
+        console.log("✅ Entry added:", entry);
+      } catch (err) {
+        console.error("❌ Failed to upload entry:", entry, err);
+      }
+    }
+    alert("✅ Data uploaded successfully!");
+    fetchAndDisplayData();
+  }
 
-      <div class="flex gap-2 mt-4">
-        <button id="applyFilters" class="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600">Apply</button>
-        <button id="resetFilters" class="bg-gray-500 text-white px-4 py-1 rounded hover:bg-gray-600">Reset</button>
-      </div>
-    </div>
+  document.addEventListener("DOMContentLoaded", () => {
+    const csvInput = document.getElementById("csvInput");
+    const uploadBtn = document.getElementById("uploadBtn");
 
-    <!-- Main Content -->
-    <div class="flex-1 overflow-x-auto p-6">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-bold">📁 Upload / Search</h2>
-        <button id="dataSearchBtn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Refresh Data</button>
-      </div>
+    uploadBtn.addEventListener("click", () => {
+      const file = csvInput.files[0];
+      if (!file) return alert("Please select a CSV file");
 
-      <div class="flex items-center gap-4 mb-6">
-        <input type="file" id="csvInput" accept=".csv" class="border px-4 py-2 rounded" />
-        <button id="uploadBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Upload</button>
-      </div>
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const csvText = e.target.result;
+        const data = parseCSV(csvText);
+        console.log("Parsed CSV data:", data);
+        await uploadCSVToFirestore(data);
+      };
+      reader.readAsText(file);
+    });
 
-      <div class="overflow-x-auto border rounded bg-white">
-        <table class="min-w-full table-auto text-left">
-          <thead class="bg-gray-100 border-b">
-            <tr>
-              <th class="p-2">First Name</th>
-              <th class="p-2">Last Name</th>
-              <th class="p-2">Job Title</th>
-              <th class="p-2">Email</th>
-              <th class="p-2">Phone</th>
-              <th class="p-2">LinkedIn</th>
-              <th class="p-2">Company</th>
-              <th class="p-2">Employee Size</th>
-              <th class="p-2">Domain</th>
-              <th class="p-2">Location</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody" class="divide-y"></tbody>
-        </table>
-      </div>
+    setupFilters();
+    fetchAndDisplayData();
+    setupJobTitleInput();
+  });
 
-      <div id="pagination" class="mt-4 flex flex-wrap gap-2"></div>
-    </div>
-  </div>
-</body>
-</html>
+  async function fetchAndDisplayData() {
+    const snapshot = await getDocs(contactsRef);
+    allData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    applyFilters();
+  }
+
+  function parseFilterInput(input) {
+    return input
+      .split(/[\n,]+/)
+      .map(val => val.trim().toLowerCase())
+      .filter(val => val);
+  }
+
+  function applyFilters() {
+    const domainList = parseFilterInput(document.getElementById("domainFilter").value);
+    const companyList = parseFilterInput(document.getElementById("companyFilter").value);
+    const employeeSizeList = parseFilterInput(document.getElementById("employeeFilter").value);
+    const locationList = parseFilterInput(document.getElementById("locationFilter").value);
+    const jobTitleList = jobTitleTags.map(tag => tag.toLowerCase());
+
+    let filtered = allData.filter(item => {
+      const email = (item.email || "").toLowerCase();
+      const company = (item.company || "").toLowerCase();
+      const employeeSize = (item["employee Size"] || "").toLowerCase();
+      const location = (item.location || "").toLowerCase();
+      const jobTitle = (item["job title"] || "").toLowerCase();
+
+      const domainMatch = domainList.length === 0 || domainList.some(val => email.includes(val));
+      const companyMatch = companyList.length === 0 || companyList.some(val => company.includes(val));
+      const employeeMatch = employeeSizeList.length === 0 || employeeSizeList.some(val => employeeSize.includes(val));
+      const locationMatch = locationList.length === 0 || locationList.some(val => location.includes(val));
+      const jobTitleMatch = jobTitleList.length === 0 || jobTitleList.some(val => jobTitle.includes(val));
+
+      return domainMatch && companyMatch && employeeMatch && locationMatch && jobTitleMatch;
+    });
+
+    renderTable(filtered);
+  }
+
+  function renderTable(data) {
+    const tableBody = document.getElementById("tableBody");
+    const pagination = document.getElementById("pagination");
+    tableBody.innerHTML = "";
+    pagination.innerHTML = "";
+
+    const rowsPerPage = 50;
+    const pageCount = Math.ceil(data.length / rowsPerPage);
+    let currentPage = 1;
+
+    function showPage(page) {
+      tableBody.innerHTML = "";
+      const start = (page - 1) * rowsPerPage;
+      const end = start + rowsPerPage;
+      const pageData = data.slice(start, end);
+
+      for (const item of pageData) {
+        const row = document.createElement("tr");
+        row.classList.add("border-b");
+        row.innerHTML = `
+          <td class="p-2">${item["first name"] || ""}</td>
+          <td class="p-2">${item["last name"] || ""}</td>
+          <td class="p-2">${item["job title"] || ""}</td>
+          <td class="p-2">${item.email || ""}</td>
+          <td class="p-2">${item.phone || ""}</td>
+          <td class="p-2">${item.linkedin || ""}</td>
+          <td class="p-2">${item.company || ""}</td>
+          <td class="p-2">${item["employee Size"] || ""}</td>
+          <td class="p-2">${item.domain || ""}</td>
+          <td class="p-2">${item.location || ""}</td>
+        `;
+        tableBody.appendChild(row);
+      }
+    }
+
+    function renderPagination() {
+      for (let i = 1; i <= pageCount; i++) {
+        const btn = document.createElement("button");
+        btn.innerText = i;
+        btn.className = "px-3 py-1 m-1 border rounded hover:bg-gray-200";
+        btn.onclick = () => {
+          currentPage = i;
+          showPage(currentPage);
+        };
+        pagination.appendChild(btn);
+      }
+    }
+
+    showPage(currentPage);
+    renderPagination();
+  }
+
+  function setupFilters() {
+    document.getElementById("applyFilters").addEventListener("click", applyFilters);
+    document.getElementById("resetFilters").addEventListener("click", () => {
+      document.getElementById("domainFilter").value = "";
+      document.getElementById("companyFilter").value = "";
+      document.getElementById("employeeFilter").value = "";
+      document.getElementById("locationFilter").value = "";
+      jobTitleTags = [];
+      updateJobTitleTagsUI();
+      applyFilters();
+    });
+
+    document.getElementById("dataSearchBtn").addEventListener("click", () => {
+      document.getElementById("domainFilter").value = "";
+      document.getElementById("companyFilter").value = "";
+      document.getElementById("employeeFilter").value = "";
+      document.getElementById("locationFilter").value = "";
+      jobTitleTags = [];
+      updateJobTitleTagsUI();
+      fetchAndDisplayData();
+    });
+
+    document.querySelectorAll("input").forEach(input => {
+      input.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") applyFilters();
+      });
+    });
+  }
+
+  function setupJobTitleInput() {
+    const input = document.getElementById("jobTitleInput");
+    const tagsContainer = document.getElementById("jobTitleTags");
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && input.value.trim() !== "") {
+        const value = input.value.trim();
+        if (!jobTitleTags.includes(value)) {
+          jobTitleTags.push(value);
+          input.value = "";
+          updateJobTitleTagsUI();
+          applyFilters();
+        }
+      }
+    });
+
+    updateJobTitleTagsUI();
+  }
+
+  function updateJobTitleTagsUI() {
+    const container = document.getElementById("jobTitleTags");
+    container.innerHTML = "";
+    jobTitleTags.forEach((tag, index) => {
+      const tagEl = document.createElement("span");
+      tagEl.className = "bg-blue-100 text-blue-800 px-2 py-1 rounded flex items-center gap-1";
+      tagEl.innerHTML = `${tag} <button class="text-red-600" data-index="${index}">&times;</button>`;
+      container.appendChild(tagEl);
+    });
+
+    container.querySelectorAll("button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const idx = btn.getAttribute("data-index");
+        jobTitleTags.splice(idx, 1);
+        updateJobTitleTagsUI();
+        applyFilters();
+      });
+    });
+  }
+</script>

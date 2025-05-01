@@ -4,12 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Data Management Tool</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <script type="module">
-    // Firebase v9 imports
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
     import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
-    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyArvSLQwgXrK1gjk8g7QSQPCxi4BJ--QlA",
       authDomain: "data-management-tool-c849c.firebaseapp.com",
@@ -19,14 +18,12 @@
       appId: "1:98848563973:web:a1e7c051397a303b090d6c",
     };
 
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const contactsRef = collection(db, "contacts");
 
     let allData = [];
 
-    // Parse CSV
     function parseCSV(csvText) {
       const rows = csvText.trim().split("\n");
       const headers = rows[0].split(",").map(h => h.trim());
@@ -47,7 +44,12 @@
 
     async function uploadCSVToFirestore(data) {
       for (const entry of data) {
-        await addDoc(contactsRef, entry);
+        try {
+          await addDoc(contactsRef, entry);
+          console.log("✅ Entry added:", entry);
+        } catch (err) {
+          console.error("❌ Failed to upload entry:", entry, err);
+        }
       }
       alert("✅ Data uploaded successfully!");
       fetchAndDisplayData();
@@ -65,6 +67,7 @@
         reader.onload = async (e) => {
           const csvText = e.target.result;
           const data = parseCSV(csvText);
+          console.log("Parsed CSV data:", data);
           await uploadCSVToFirestore(data);
         };
         reader.readAsText(file);
@@ -77,19 +80,17 @@
     async function fetchAndDisplayData() {
       const snapshot = await getDocs(contactsRef);
       allData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      applyFilters(); // auto-show
+      applyFilters();
     }
 
     function applyFilters() {
       const domain = document.getElementById("domainFilter").value.toLowerCase();
       const company = document.getElementById("companyFilter").value.toLowerCase();
-      const jobTitle = document.getElementById("jobTitleFilter").value.toLowerCase();
       const employeeSize = document.getElementById("employeeFilter").value.toLowerCase();
 
       let filtered = allData.filter(item =>
         (!domain || (item.email || "").toLowerCase().includes(domain)) &&
         (!company || (item.company || "").toLowerCase().includes(company)) &&
-        (!jobTitle || (item.title || "").toLowerCase().includes(jobTitle)) &&
         (!employeeSize || (item["employee size"] || "").toLowerCase().includes(employeeSize))
       );
 
@@ -114,15 +115,16 @@
 
         for (const item of pageData) {
           const row = document.createElement("tr");
+          row.classList.add("border-b");
           row.innerHTML = `
-            <td>${item["first name"] || ""}</td>
-            <td>${item["last name"] || ""}</td>
-            <td>${item.title || ""}</td>
-            <td>${item.email || ""}</td>
-            <td>${item.phone || ""}</td>
-            <td>${item.linkedin || ""}</td>
-            <td>${item.company || ""}</td>
-            <td>${item["employee size"] || ""}</td>
+            <td class="p-2">${item["first name"] || ""}</td>
+            <td class="p-2">${item["last name"] || ""}</td>
+            <td class="p-2">${item.title || ""}</td>
+            <td class="p-2">${item.email || ""}</td>
+            <td class="p-2">${item.phone || ""}</td>
+            <td class="p-2">${item.linkedin || ""}</td>
+            <td class="p-2">${item.company || ""}</td>
+            <td class="p-2">${item["employee size"] || ""}</td>
           `;
           tableBody.appendChild(row);
         }
@@ -132,6 +134,7 @@
         for (let i = 1; i <= pageCount; i++) {
           const btn = document.createElement("button");
           btn.innerText = i;
+          btn.className = "px-3 py-1 m-1 border rounded hover:bg-gray-200";
           btn.onclick = () => {
             currentPage = i;
             showPage(currentPage);
@@ -149,7 +152,6 @@
       document.getElementById("resetFilters").addEventListener("click", () => {
         document.getElementById("domainFilter").value = "";
         document.getElementById("companyFilter").value = "";
-        document.getElementById("jobTitleFilter").value = "";
         document.getElementById("employeeFilter").value = "";
         applyFilters();
       });
@@ -157,12 +159,10 @@
       document.getElementById("dataSearchBtn").addEventListener("click", () => {
         document.getElementById("domainFilter").value = "";
         document.getElementById("companyFilter").value = "";
-        document.getElementById("jobTitleFilter").value = "";
         document.getElementById("employeeFilter").value = "";
         fetchAndDisplayData();
       });
 
-      // Enter key triggers filter
       document.querySelectorAll("input").forEach(input => {
         input.addEventListener("keypress", (e) => {
           if (e.key === "Enter") applyFilters();
@@ -171,44 +171,58 @@
     }
   </script>
 </head>
-<body>
-  <h2>📁 Upload CSV to Firestore</h2>
-  <input type="file" id="csvInput" accept=".csv" />
-  <button id="uploadBtn">Upload</button>
+<body class="bg-gray-50 text-gray-800 p-8">
+  <div class="max-w-7xl mx-auto">
+    <h2 class="text-2xl font-bold mb-4">📁 Upload CSV to Firestore</h2>
+    <div class="flex items-center gap-4 mb-6">
+      <input type="file" id="csvInput" accept=".csv" class="border px-4 py-2 rounded" />
+      <button id="uploadBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Upload</button>
+    </div>
 
-  <hr/>
+    <hr class="my-6"/>
 
-  <h2>🔍 Data Search</h2>
-  <button id="dataSearchBtn">Data Search</button>
-  <div>
-    <label>Domain:</label>
-    <input type="text" id="domainFilter" placeholder="e.g. gmail.com" />
-    <label>Company:</label>
-    <input type="text" id="companyFilter" placeholder="e.g. Google" />
-    <label>Job Title:</label>
-    <input type="text" id="jobTitleFilter" placeholder="e.g. Marketing Manager" />
-    <label>Employee Size:</label>
-    <input type="text" id="employeeFilter" placeholder="e.g. 1000+" />
-    <button id="applyFilters">Apply Filters</button>
-    <button id="resetFilters">Reset Filters</button>
+    <h2 class="text-xl font-semibold mb-4">🔍 Data Search</h2>
+    <div class="mb-4">
+      <button id="dataSearchBtn" class="mb-2 bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Refresh / Data Search</button>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div>
+          <label>Domain:</label>
+          <input type="text" id="domainFilter" placeholder="e.g. gmail.com" class="w-full border p-2 rounded" />
+        </div>
+        <div>
+          <label>Company:</label>
+          <input type="text" id="companyFilter" placeholder="e.g. Google" class="w-full border p-2 rounded" />
+        </div>
+        <div>
+          <label>Employee Size:</label>
+          <input type="text" id="employeeFilter" placeholder="e.g. 1000+" class="w-full border p-2 rounded" />
+        </div>
+      </div>
+      <div class="mt-4 flex gap-2">
+        <button id="applyFilters" class="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600">Apply Filters</button>
+        <button id="resetFilters" class="bg-gray-500 text-white px-4 py-1 rounded hover:bg-gray-600">Reset Filters</button>
+      </div>
+    </div>
+
+    <div class="overflow-auto">
+      <table class="table-auto w-full border border-gray-300 bg-white">
+        <thead class="bg-gray-200">
+          <tr>
+            <th class="p-2">First Name</th>
+            <th class="p-2">Last Name</th>
+            <th class="p-2">Job Title</th>
+            <th class="p-2">Email</th>
+            <th class="p-2">Phone</th>
+            <th class="p-2">LinkedIn</th>
+            <th class="p-2">Company</th>
+            <th class="p-2">Employee Size</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+
+    <div id="pagination" class="mt-4 flex flex-wrap gap-2"></div>
   </div>
-
-  <table border="1" style="margin-top: 20px; width: 100%;">
-    <thead>
-      <tr>
-        <th>First Name</th>
-        <th>Last Name</th>
-        <th>Job Title</th>
-        <th>Email</th>
-        <th>Phone</th>
-        <th>LinkedIn</th>
-        <th>Company</th>
-        <th>Employee Size</th>
-      </tr>
-    </thead>
-    <tbody id="tableBody"></tbody>
-  </table>
-
-  <div id="pagination" style="margin-top: 10px;"></div>
 </body>
 </html>

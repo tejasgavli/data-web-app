@@ -172,71 +172,62 @@
     }
   </script>
 </head>
-<body class="bg-gray-50 text-gray-800 p-8">
-  <div class="max-w-7xl mx-auto">
-    <h2 class="text-2xl font-bold mb-4">📁 Upload CSV to Firestore</h2>
-    <div class="flex items-center gap-4 mb-6">
-      <input type="file" id="csvInput" accept=".csv" class="border px-4 py-2 rounded" />
-      <button id="uploadBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Upload</button>
+<body class="bg-gray-50 text-gray-800">
+  <div class="flex h-screen overflow-hidden">
+    <!-- Sidebar Filters -->
+    <div class="w-64 bg-white border-r p-4">
+      <h3 class="text-lg font-semibold mb-4">🔍 Filters</h3>
+      <div class="mb-3">
+        <label class="block font-medium">Domain:</label>
+        <input type="text" id="domainFilter" placeholder="e.g. gmail.com" class="w-full border p-2 rounded" />
+      </div>
+      <div class="mb-3">
+        <label class="block font-medium">Company:</label>
+        <input type="text" id="companyFilter" placeholder="e.g. Google" class="w-full border p-2 rounded" />
+      </div>
+      <div class="mb-3">
+        <label class="block font-medium">Employee Size:</label>
+        <input type="text" id="employeeFilter" placeholder="e.g. 1000+" class="w-full border p-2 rounded" />
+      </div>
+      <div class="flex gap-2 mt-4">
+        <button id="applyFilters" class="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600">Apply</button>
+        <button id="resetFilters" class="bg-gray-500 text-white px-4 py-1 rounded hover:bg-gray-600">Reset</button>
+      </div>
     </div>
 
-    <hr class="my-6"/>
+    <!-- Main Content -->
+    <div class="flex-1 overflow-x-auto p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold">📁 Upload / Search</h2>
+        <button id="dataSearchBtn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Refresh Data</button>
+      </div>
 
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-  <!-- Sidebar filters -->
-  <div class="bg-white p-4 rounded shadow col-span-1">
-    <h3 class="text-lg font-semibold mb-4">🔍 Filters</h3>
-    <div class="mb-3">
-      <label class="block font-medium">Domain:</label>
-      <input type="text" id="domainFilter" placeholder="e.g. gmail.com" class="w-full border p-2 rounded" />
-    </div>
-    <div class="mb-3">
-      <label class="block font-medium">Company:</label>
-      <input type="text" id="companyFilter" placeholder="e.g. Google" class="w-full border p-2 rounded" />
-    </div>
-    <div class="mb-3">
-      <label class="block font-medium">Employee Size:</label>
-      <input type="text" id="employeeFilter" placeholder="e.g. 1000+" class="w-full border p-2 rounded" />
-    </div>
-    <div class="flex gap-2 mt-4">
-      <button id="applyFilters" class="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600">Apply</button>
-      <button id="resetFilters" class="bg-gray-500 text-white px-4 py-1 rounded hover:bg-gray-600">Reset</button>
+      <div class="flex items-center gap-4 mb-6">
+        <input type="file" id="csvInput" accept=".csv" class="border px-4 py-2 rounded" />
+        <button id="uploadBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Upload</button>
+      </div>
+
+      <div class="overflow-x-auto border rounded bg-white">
+        <table class="min-w-full table-auto text-left">
+          <thead class="bg-gray-100 border-b">
+            <tr>
+              <th class="p-2">First Name</th>
+              <th class="p-2">Last Name</th>
+              <th class="p-2">Job Title</th>
+              <th class="p-2">Email</th>
+              <th class="p-2">Phone</th>
+              <th class="p-2">LinkedIn</th>
+              <th class="p-2">Company</th>
+              <th class="p-2">Employee Size</th>
+              <th class="p-2">Domain</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="divide-y"></tbody>
+        </table>
+      </div>
+
+      <div id="pagination" class="mt-4 flex flex-wrap gap-2"></div>
     </div>
   </div>
-
-  <!-- Main content -->
-  <div class="md:col-span-3">
-    <div class="flex justify-between items-center mb-4">
-      <h2 class="text-xl font-semibold">📁 Upload / Search</h2>
-      <button id="dataSearchBtn" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Refresh Data</button>
-    </div>
-
-    <div class="flex items-center gap-4 mb-6">
-      <input type="file" id="csvInput" accept=".csv" class="border px-4 py-2 rounded" />
-      <button id="uploadBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Upload</button>
-    </div>
-
-    <div style="overflow-x: auto; max-width: 100%;">
-  <table border="1" style="margin-top: 20px; width: max-content; min-width: 100%;">
-    <thead>
-      <tr>
-        <th class="p-2">First Name</th>
-        <th class="p-2">Last Name</th>
-        <th class="p-2">Job Title</th>
-        <th class="p-2">Email</th>
-        <th class="p-2">Phone</th>
-        <th class="p-2">LinkedIn</th>
-        <th class="p-2">Company</th>
-        <th class="p-2">Employee Size</th>
-        <th class="p-2">Domain</th>
-      </tr>
-    </thead>
-    <tbody id="tableBody"></tbody>
-  </table>
-</div>
-
-    <div id="pagination" class="mt-4 flex flex-wrap gap-2"></div>
-  </div>
-</div>    
 </body>
 </html>

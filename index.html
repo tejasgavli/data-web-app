@@ -202,10 +202,11 @@ function applyFilters() {
         <label class="block font-medium">Company:</label>
         <input type="text" id="companyFilter" placeholder="e.g. Google" class="w-full border p-2 rounded" />
       </div>
-      <div id="jobTitleFilterWrapper" class="filter-tag-wrapper">
-  <div id="jobTitleTags" class="tags-container"></div>
-  <input type="text" id="jobTitleFilterInput" placeholder="Type and press Enter" class="tag-input">
-</div>
+      <div class="filter-section" id="job-title-filter">
+  <label for="jobTitleInput" class="block font-semibold mb-1">Job Title</label>
+  <div class="tag-input-container border rounded p-2 min-h-[42px] cursor-text flex flex-wrap" id="jobTitleTagContainer" onclick="document.getElementById('jobTitleInput').focus()">
+    <input type="text" id="jobTitleInput" class="flex-grow outline-none border-none px-1 py-1 min-w-[100px]" placeholder="Type and hit Enter" />
+  </div>
       <div class="mb-3">
         <label class="block font-medium">Employee Size:</label>
         <input type="text" id="employeeFilter" placeholder="e.g. 1000+" class="w-full border p-2 rounded" />

@@ -87,12 +87,15 @@
       const domain = document.getElementById("domainFilter").value.toLowerCase();
       const company = document.getElementById("companyFilter").value.toLowerCase();
       const employeeSize = document.getElementById("employeeFilter").value.toLowerCase();
+      const location = document.getElementById("locationFilter").value.toLowerCase();
+
 
       let filtered = allData.filter(item =>
-        (!domain || (item.email || "").toLowerCase().includes(domain)) &&
-        (!company || (item.company || "").toLowerCase().includes(company)) &&
-        (!employeeSize || (item["employee size"] || "").toLowerCase().includes(employeeSize))
-      );
+     (!domain || (item.email || "").toLowerCase().includes(domain)) &&
+     (!company || (item.company || "").toLowerCase().includes(company)) &&
+     (!employeeSize || (item["employee Size"] || "").toLowerCase().includes(employeeSize)) &&
+     (!location || (item.location || "").toLowerCase().includes(location))
+);
 
       renderTable(filtered);
     }

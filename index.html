@@ -1,208 +1,351 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Data Management Tool</title>
-  <script type="module">
-    // Firebase v9 imports
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+    <html lang="en">
 
-    // Firebase config
-    const firebaseConfig = {
-      apiKey: "AIzaSyArvSLQwgXrK1gjk8g7QSQPCxi4BJ--QlA",
-      authDomain: "data-management-tool-c849c.firebaseapp.com",
-      projectId: "data-management-tool-c849c",
-      storageBucket: "data-management-tool-c849c.appspot.com",
-      messagingSenderId: "98848563973",
-      appId: "1:98848563973:web:a1e7c051397a303b090d6c",
-    };
-
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const contactsRef = collection(db, "contacts");
-
-    let allData = [];
-
-    // Parse CSV
-    function parseCSV(csvText) {
-      const rows = csvText.trim().split("\n");
-      const headers = rows[0].split(",").map(h => h.trim());
-      const data = [];
-
-      for (let i = 1; i < rows.length; i++) {
-        const values = rows[i].split(",").map(v => v.trim());
-        if (values.length >= 1 && values.some(val => val)) {
-          const entry = {};
-          headers.forEach((header, j) => {
-            entry[header] = values[j] || "";
-          });
-          data.push(entry);
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Asset &amp; Data Management Platform</title>
+      <script src="https://cdn.tailwindcss.com"></script>
+      <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons.css" rel="stylesheet">
+      <style>
+        .loading {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(255, 255, 255, 0.8);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 9999;
         }
-      }
-      return data;
-    }
 
-    async function uploadCSVToFirestore(data) {
-      for (const entry of data) {
-        await addDoc(contactsRef, entry);
-      }
-      alert("✅ Data uploaded successfully!");
-      fetchAndDisplayData();
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      const csvInput = document.getElementById("csvInput");
-      const uploadBtn = document.getElementById("uploadBtn");
-
-      uploadBtn.addEventListener("click", () => {
-        const file = csvInput.files[0];
-        if (!file) return alert("Please select a CSV file");
-
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          const csvText = e.target.result;
-          const data = parseCSV(csvText);
-          await uploadCSVToFirestore(data);
-        };
-        reader.readAsText(file);
-      });
-
-      setupFilters();
-      fetchAndDisplayData();
-    });
-
-    async function fetchAndDisplayData() {
-      const snapshot = await getDocs(contactsRef);
-      allData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      applyFilters(); // auto-show
-    }
-
-    function applyFilters() {
-      const domain = document.getElementById("domainFilter").value.toLowerCase();
-      const company = document.getElementById("companyFilter").value.toLowerCase();
-      const employeeSize = document.getElementById("employeeFilter").value.toLowerCase();
-
-      let filtered = allData.filter(item =>
-        (!domain || (item.email || "").toLowerCase().includes(domain)) &&
-        (!company || (item.company || "").toLowerCase().includes(company)) &&
-        (!employeeSize || (item["employee size"] || "").toLowerCase().includes(employeeSize))
-      );
-
-      renderTable(filtered);
-    }
-
-    function renderTable(data) {
-      const tableBody = document.getElementById("tableBody");
-      const pagination = document.getElementById("pagination");
-      tableBody.innerHTML = "";
-      pagination.innerHTML = "";
-
-      const rowsPerPage = 50;
-      const pageCount = Math.ceil(data.length / rowsPerPage);
-      let currentPage = 1;
-
-      function showPage(page) {
-        tableBody.innerHTML = "";
-        const start = (page - 1) * rowsPerPage;
-        const end = start + rowsPerPage;
-        const pageData = data.slice(start, end);
-
-        for (const item of pageData) {
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${item["first name"] || ""}</td>
-            <td>${item["last name"] || ""}</td>
-            <td>${item.title || ""}</td>
-            <td>${item.email || ""}</td>
-            <td>${item.phone || ""}</td>
-            <td>${item.linkedin || ""}</td>
-            <td>${item.company || ""}</td>
-            <td>${item["employee size"] || ""}</td>
-          `;
-          tableBody.appendChild(row);
+        .loading-spinner {
+          width: 50px;
+          height: 50px;
+          border: 5px solid #f3f3f3;
+          border-top: 5px solid #3498db;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
         }
-      }
 
-      function renderPagination() {
-        for (let i = 1; i <= pageCount; i++) {
-          const btn = document.createElement("button");
-          btn.innerText = i;
-          btn.onclick = () => {
-            currentPage = i;
-            showPage(currentPage);
+        @keyframes spin {
+          0% {
+            transform: rotate(0deg);
+          }
+
+          100% {
+            transform: rotate(360deg);
+          }
+        }
+
+        .filter-panel {
+          height: calc(100vh - 64px);
+          overflow-y: auto;
+        }
+
+        .filter-tag {
+          background-color: #e2e8f0;
+          padding: 0.25rem 0.5rem;
+          border-radius: 0.25rem;
+          margin-right: 0.25rem;
+          margin-bottom: 0.25rem;
+          display: inline-flex;
+          align-items: center;
+        }
+
+        .filter-tag .remove-filter {
+          cursor: pointer;
+          margin-left: 0.25rem;
+        }
+      </style>
+    </head>
+
+    <body class="bg-gray-50">
+      <div id="loading" class="loading hidden">
+        <div class="loading-spinner"></div>
+      </div>
+
+      <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+          <div class="flex justify-between items-center h-16">
+            <div class="flex">
+              <div class="flex-shrink-0 flex items-center">
+                <h1 class="text-2xl font-bold text-gray-800">AssetSense</h1>
+              </div>
+            </div>
+            <div class="flex space-x-4">
+              <button onclick="switchView('data')"
+                class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">Data
+                Search</button>
+              <button onclick="switchView('upload')"
+                class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">Upload
+                Data</button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <!-- Data Search View -->
+      <div id="dataView" class="flex h-full">
+        <!-- Filter Panel -->
+        <div class="w-1/4 bg-white shadow-lg p-4 filter-panel">
+          <h2 class="text-lg font-semibold mb-4">Filters</h2>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Company Name</label>
+              <input type="text" id="companyName"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                onkeydown="handleEnter(event, 'companyName')">
+              <div id="companyNameFilters" class="mt-1"></div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Domain Name</label>
+              <input type="text" id="domainName"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                onkeydown="handleEnter(event, 'domainName')">
+              <div id="domainNameFilters" class="mt-1"></div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Job Title</label>
+              <input type="text" id="jobTitle"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                onkeydown="handleEnter(event, 'jobTitle')">
+              <div id="jobTitleFilters" class="mt-1"></div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Location</label>
+              <input type="text" id="location"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                onkeydown="handleEnter(event, 'location')">
+              <div id="locationFilters" class="mt-1"></div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Industry</label>
+              <select id="industry"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                <option value="">All Industries</option>
+                <option value="tech">Technology</option>
+                <option value="finance">Finance</option>
+                <option value="healthcare">Healthcare</option>
+                <option value="retail">Retail</option>
+              </select>
+            </div>
+            <button onclick="applyFilters()"
+              class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Apply
+              Filters</button>
+          </div>
+        </div>
+
+        <!-- Results Panel -->
+        <div class="w-3/4 p-4">
+          <div id="searchResults" class="grid grid-cols-1 gap-4">
+            <!-- Results will be populated here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Upload View -->
+      <div id="uploadView" class="hidden max-w-7xl mx-auto px-4 py-6">
+        <h2 class="text-2xl font-bold mb-4">Upload Data</h2>
+        <div class="bg-white shadow-lg rounded-lg p-6">
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700">Upload CSV File</label>
+            <input type="file" id="csvFile" accept=".csv" class="mt-1 block w-full">
+          </div>
+          <button onclick="uploadData()"
+            class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Upload</button>
+        </div>
+      </div>
+
+      <script>
+        // MongoDB Collection names
+        const ASSETS_COLLECTION = 'assets-inventory-123456';
+        const DATA_COLLECTION = 'business-data-123456';
+
+        // View Management
+        function switchView(view) {
+          document.getElementById('dataView').classList.add('hidden');
+          document.getElementById('uploadView').classList.add('hidden');
+
+          document.getElementById(view + 'View').classList.remove('hidden');
+        }
+
+        // Loading Management
+        function showLoading() {
+          document.getElementById('loading').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+          document.getElementById('loading').classList.add('hidden');
+        }
+
+        function handleEnter(event, fieldId) {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            const input = document.getElementById(fieldId);
+            const values = input.value.split(',').map(v => v.trim());
+            values.forEach(value => {
+              applyFilterTag(fieldId, value);
+            });
+            input.value = '';
+          }
+        }
+
+        function applyFilterTag(fieldId, filterValue) {
+          if (filterValue) {
+            const filterContainer = document.getElementById(fieldId + 'Filters');
+            const filterTag = document.createElement('span');
+            filterTag.className = 'filter-tag';
+            filterTag.innerHTML = `
+                    ${filterValue}
+                    <span class="remove-filter" onclick="removeFilterTag(this, '${fieldId}', '${filterValue}')">&times;</span>
+                `;
+            filterContainer.appendChild(filterTag);
+          }
+        }
+
+        function removeFilterTag(element, fieldId, filterValue) {
+          element.parentNode.remove();
+          applyFilters(); // Reapply filters after removing a tag
+        }
+
+        // Data Search
+        async function applyFilters() {
+          showLoading();
+
+          const filters = {
+            companyName: Array.from(document.getElementById('companyNameFilters').children).map(tag =>
+              tag.textContent.trim().slice(0, -1)),
+            domainName: Array.from(document.getElementById('domainNameFilters').children).map(tag =>
+              tag.textContent.trim().slice(0, -1)),
+            jobTitle: Array.from(document.getElementById('jobTitleFilters').children).map(tag =>
+              tag.textContent.trim().slice(0, -1)),
+            location: Array.from(document.getElementById('locationFilters').children).map(tag =>
+              tag.textContent.trim().slice(0, -1)),
+            industry: document.getElementById('industry').value
           };
-          pagination.appendChild(btn);
+
+          try {
+            const conditions = {};
+            Object.entries(filters).forEach(([key, value]) => {
+              if (Array.isArray(value) && value.length > 0) {
+                conditions[key] = {
+                  $in: value
+                };
+              } else if (value) {
+                conditions[key] = value;
+              }
+            });
+
+            const response = await fetch('https://r0c8kgwocscg8gsokogwwsw4.zetaverse.one/mongodb', {
+              method: 'POST',
+              headers: {
+                'Authorization': 'Bearer lIiCWmvARYT4JgMnUbY3CDkQtMK2',
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                appSlug: DATA_COLLECTION,
+                action: 'read',
+                collection: 'companies',
+                conditions
+              })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+              const searchResults = document.getElementById('searchResults');
+              searchResults.innerHTML = '';
+
+              data.result.forEach(company => {
+                const companyCard = document.createElement('div');
+                companyCard.className = 'bg-white shadow-lg rounded-lg p-4';
+                companyCard.innerHTML = `
+                            <h3 class="text-lg font-semibold">Company Name: ${company.companyName}</h3>
+                            <p class="text-gray-600">Domain: ${company.domainName}</p>
+                            <p class="text-gray-600">Job Title: ${company.jobTitle || 'N/A'}</p>
+                            <p class="text-gray-600">Location: ${company.location}</p>
+                            <p class="text-gray-600">Industry: ${company.industry}</p>
+                            <p class="text-gray-600">First Name: ${company.firstName || 'N/A'}</p>
+                            <p class="text-gray-600">Last Name: ${company.lastName || 'N/A'}</p>
+                        `;
+                searchResults.appendChild(companyCard);
+              });
+            }
+          } catch (error) {
+            console.error('Error applying filters:', error);
+            alert('Error applying filters');
+          } finally {
+            hideLoading();
+          }
         }
-      }
 
-      showPage(currentPage);
-      renderPagination();
-    }
+        // Data Upload
+        async function uploadData() {
+          const fileInput = document.getElementById('csvFile');
+          const file = fileInput.files[0];
 
-    function setupFilters() {
-      document.getElementById("applyFilters").addEventListener("click", applyFilters);
-      document.getElementById("resetFilters").addEventListener("click", () => {
-        document.getElementById("domainFilter").value = "";
-        document.getElementById("companyFilter").value = "";
-        document.getElementById("employeeFilter").value = "";
-        applyFilters();
-      });
+          if (!file) {
+            alert('Please select a file');
+            return;
+          }
 
-      document.getElementById("dataSearchBtn").addEventListener("click", () => {
-        document.getElementById("domainFilter").value = "";
-        document.getElementById("companyFilter").value = "";
-        document.getElementById("employeeFilter").value = "";
-        fetchAndDisplayData();
-      });
+          showLoading();
 
-      // Enter key triggers filter
-      document.querySelectorAll("input").forEach(input => {
-        input.addEventListener("keypress", (e) => {
-          if (e.key === "Enter") applyFilters();
-        });
-      });
-    }
-  </script>
-</head>
-<body>
-  <h2>📁 Upload CSV to Firestore</h2>
-  <input type="file" id="csvInput" accept=".csv" />
-  <button id="uploadBtn">Upload</button>
+          try {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+              const text = e.target.result;
+              const rows = text.split('\n');
+              const headers = rows[0].split(',');
 
-  <hr/>
+              for (let i = 1; i < rows.length; i++) {
+                const values = rows[i].split(',');
+                const record = {};
+                headers.forEach((header, index) => {
+                  record[header.trim()] = values[index]?.trim();
+                });
 
-  <h2>🔍 Data Search</h2>
-  <button id="dataSearchBtn">Data Search</button>
-  <div>
-    <label>Domain:</label>
-    <input type="text" id="domainFilter" placeholder="e.g. gmail.com" />
-    <label>Company:</label>
-    <input type="text" id="companyFilter" placeholder="e.g. Google" />
-    <label>Employee Size:</label>
-    <input type="text" id="employeeFilter" placeholder="e.g. 1000+" />
-    <button id="applyFilters">Apply Filters</button>
-    <button id="resetFilters">Reset Filters</button>
-  </div>
+                await fetch('https://r0c8kgwocscg8gsokogwwsw4.zetaverse.one/mongodb', {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': 'Bearer lIiCWmvARYT4JgMnUbY3CDkQtMK2',
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    appSlug: DATA_COLLECTION,
+                    action: 'create',
+                    collection: 'companies',
+                    data: record
+                  })
+                });
+              }
 
-  <table border="1" style="margin-top: 20px; width: 100%;">
-    <thead>
-      <tr>
-        <th>First Name</th>
-        <th>Last Name</th>
-        <th>Job Title</th>
-        <th>Email</th>
-        <th>Phone</th>
-        <th>LinkedIn</th>
-        <th>Company</th>
-        <th>Employee Size</th>
-      </tr>
-    </thead>
-    <tbody id="tableBody"></tbody>
-  </table>
+              alert('Data uploaded successfully');
+              fileInput.value = '';
+            };
+            reader.readAsText(file);
+          } catch (error) {
+            console.error('Error uploading data:', error);
+            alert('Error uploading data');
+          } finally {
+            hideLoading();
+          }
+        }
 
-  <div id="pagination" style="margin-top: 10px;"></div>
-</body>
-</html>
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {});
+      </script>
+      <script>
+        document.body.addEventListener('wheel', e => {
+          if (!e.ctrlKey) return;
+          e.preventDefault();
+          return
+        }, {
+          passive: false
+        })
+      </script>
+    </body>
+
+    </html>

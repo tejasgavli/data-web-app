@@ -125,6 +125,7 @@
             <td class="p-2">${item.linkedin || ""}</td>
             <td class="p-2">${item.company || ""}</td>
             <td class="p-2">${item["employee size"] || ""}</td>
+            <td class="p-2">${item.domain || ""}</td>
           `;
           tableBody.appendChild(row);
         }
@@ -227,6 +228,7 @@
             <th class="p-2">LinkedIn</th>
             <th class="p-2">Company</th>
             <th class="p-2">Employee Size</th>
+            <th class="p-2">Domain</th>
           </tr>
         </thead>
         <tbody id="tableBody"></tbody>

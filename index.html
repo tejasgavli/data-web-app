@@ -188,29 +188,28 @@
     }
 
     function applyFilters() {
-  const domainInput = document.getElementById("domainFilter").value.trim();
-  const companyInput = document.getElementById("companyFilter").value.trim();
-  const jobTitleInput = document.getElementById("jobTitleFilter").value.trim();
+  const domainInput = document.getElementById('domainFilter').value.trim();
+  const companyInput = document.getElementById('companyFilter').value.trim();
+  const jobTitleInput = document.getElementById('jobTitleFilter').value.trim();
   const employeeSize = document.getElementById("employeeFilter").value.toLowerCase();
   const industry = document.getElementById("industryFilter").value.toLowerCase();
   const country = document.getElementById("countryFilter").value.toLowerCase();
 
-  // Split comma-separated filters into arrays
   const domainFilters = domainInput ? domainInput.split(',').map(f => f.trim().toLowerCase()) : [];
   const companyFilters = companyInput ? companyInput.split(',').map(f => f.trim().toLowerCase()) : [];
   const jobTitleFilters = jobTitleInput ? jobTitleInput.split(',').map(f => f.trim().toLowerCase()) : [];
 
   const filtered = allData.filter(item => {
-    const domainMatch = domainFilters.length === 0 || domainFilters.some(f => item.domain?.toLowerCase().includes(f));
-    const companyMatch = companyFilters.length === 0 || companyFilters.some(f => item.company?.toLowerCase().includes(f));
-    const jobTitleMatch = jobTitleFilters.length === 0 || jobTitleFilters.some(f => item["job title"]?.toLowerCase().includes(f));
-    const employeeSizeMatch = !employeeSize || (item["employee Size"] || "").toLowerCase().includes(employeeSize);
+    const domainMatch = domainFilters.length === 0 || domainFilters.some(f => (item.domain || "").toLowerCase().includes(f));
+    const companyMatch = companyFilters.length === 0 || companyFilters.some(f => (item.company || "").toLowerCase().includes(f));
+    const jobTitleMatch = jobTitleFilters.length === 0 || jobTitleFilters.some(f => (item["job title"] || "").toLowerCase().includes(f));
+
+    const employeeMatch = !employeeSize || (item["employee Size"] || "").toLowerCase().includes(employeeSize);
     const industryMatch = !industry || (item.industry || "").toLowerCase().includes(industry);
     const countryMatch = !country || (item.country || "").toLowerCase().includes(country);
 
-    return domainMatch && companyMatch && jobTitleMatch && employeeSizeMatch && industryMatch && countryMatch;
+    return domainMatch && companyMatch && jobTitleMatch && employeeMatch && industryMatch && countryMatch;
   });
-
       console.log(filtered); // Debugging: Check if filtered data is correct
       renderTable(filtered);
     }

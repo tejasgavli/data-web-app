@@ -182,6 +182,7 @@
     async function fetchAndDisplayData() {
       const snapshot = await getDocs(contactsRef);
       allData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      console.log(allData); // Debugging: Check if allData contains the expected data
       applyFilters();
     }
 
@@ -202,7 +203,7 @@
         (!country || (item.country || "").toLowerCase().includes(country)) &&
 
       );
-
+      console.log(filtered); // Debugging: Check if filtered data is correct
       renderTable(filtered);
     }
 
@@ -221,7 +222,7 @@
         const start = (page - 1) * rowsPerPage;
         const end = start + rowsPerPage;
         const pageData = data.slice(start, end);
-
+console.log(pageData); // Debugging: Check if pageData has values
         for (const item of pageData) {
           const row = document.createElement("tr");
          row.innerHTML = `

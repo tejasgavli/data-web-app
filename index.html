@@ -209,16 +209,17 @@
 
         for (const item of pageData) {
           const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${item["first name"] || ""}</td>
-            <td>${item["last name"] || ""}</td>
-            <td>${item."job title"|| ""}</td>
-            <td>${item.email || ""}</td>
-            <td>${item.phone || ""}</td>
-            <td>${item.linkedin || ""}</td>
-            <td>${item.company || ""}</td>
-            <td>${item["employee Size"] || ""}</td>
-          `;
+         row.innerHTML = `
+  <td>${item["first name"] || ""}</td>
+  <td>${item["last name"] || ""}</td>
+  <td>${item["job title"] || ""}</td>
+  <td>${item.email || ""}</td>
+  <td>${item.phone || ""}</td>
+  <td>${item.linkedin || ""}</td>
+  <td>${item.company || ""}</td>
+  <td>${item["employee size"] || ""}</td>
+`;
+
           tableBody.appendChild(row);
         }
       }

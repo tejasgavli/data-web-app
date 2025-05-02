@@ -198,9 +198,9 @@
         (!domain || (item.email || "").toLowerCase().includes(domain)) &&
         (!company || (item.company || "").toLowerCase().includes(company)) &&
         (!employeeSize || (item["employee Size"] || "").toLowerCase().includes(employeeSize)) &&
-        (!title || (item["Job Title"] || "").toLowerCase().includes(title)) &&
+        (!title || (item["job title"] || "").toLowerCase().includes(title)) &&
         (!industry || (item.industry || "").toLowerCase().includes(industry)) &&
-        (!country || (item.country || "").toLowerCase().includes(country)) &&
+        (!country || (item.country || "").toLowerCase().includes(country))
 
       );
       console.log(filtered); // Debugging: Check if filtered data is correct

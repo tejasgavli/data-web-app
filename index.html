@@ -186,7 +186,7 @@
         (!domain || (item.email || "").toLowerCase().includes(domain)) &&
         (!company || (item.company || "").toLowerCase().includes(company)) &&
         (!employeeSize || (item["employee Size"] || "").toLowerCase().includes(employeeSize)) &&
-        (!title || (item.title || "").toLowerCase().includes(title))
+        (!title || (item["Job Title"] || "").toLowerCase().includes(title))
       );
 
       renderTable(filtered);
@@ -213,7 +213,7 @@
          row.innerHTML = `
   <td>${item["first name"] || ""}</td>
   <td>${item["last name"] || ""}</td>
-  <td>${item["job title"] || ""}</td>
+  <td>${item["Job Title"] || ""}</td>
   <td>${item.email || ""}</td>
   <td>${item.phone || ""}</td>
   <td>${item.linkedin || ""}</td>

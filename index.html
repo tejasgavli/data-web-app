@@ -188,40 +188,29 @@
     }
 
     function applyFilters() {
-      const domain = document.getElementById("domainFilter").value.toLowerCase();
-      const company = document.getElementById("companyFilter").value.toLowerCase();
-      const employeeSize = document.getElementById("employeeFilter").value.toLowerCase();
-      const title = document.getElementById("jobTitleFilter").value.toLowerCase();
-      const industry = document.getElementById("industryFilter").value.toLowerCase();
-      const country = document.getElementById("countryFilter").value.toLowerCase();
-      const domainInput = document.getElementById('domainFilter').value.trim();
-      const companyInput = document.getElementById('companyFilter').value.trim();
-      const jobTitleInput = document.getElementById('jobTitleFilter').value.trim();
+  const domainInput = document.getElementById("domainFilter").value.trim();
+  const companyInput = document.getElementById("companyFilter").value.trim();
+  const jobTitleInput = document.getElementById("jobTitleFilter").value.trim();
+  const employeeSize = document.getElementById("employeeFilter").value.toLowerCase();
+  const industry = document.getElementById("industryFilter").value.toLowerCase();
+  const country = document.getElementById("countryFilter").value.toLowerCase();
 
-      // Split inputs into arrays by comma
+  // Split comma-separated filters into arrays
   const domainFilters = domainInput ? domainInput.split(',').map(f => f.trim().toLowerCase()) : [];
   const companyFilters = companyInput ? companyInput.split(',').map(f => f.trim().toLowerCase()) : [];
   const jobTitleFilters = jobTitleInput ? jobTitleInput.split(',').map(f => f.trim().toLowerCase()) : [];
 
-// Filter logic
-  const filteredData = allData.filter(item => {
+  const filtered = allData.filter(item => {
     const domainMatch = domainFilters.length === 0 || domainFilters.some(f => item.domain?.toLowerCase().includes(f));
     const companyMatch = companyFilters.length === 0 || companyFilters.some(f => item.company?.toLowerCase().includes(f));
-    const jobTitleMatch = jobTitleFilters.length === 0 || jobTitleFilters.some(f => item['job title']?.toLowerCase().includes(f));
+    const jobTitleMatch = jobTitleFilters.length === 0 || jobTitleFilters.some(f => item["job title"]?.toLowerCase().includes(f));
+    const employeeSizeMatch = !employeeSize || (item["employee Size"] || "").toLowerCase().includes(employeeSize);
+    const industryMatch = !industry || (item.industry || "").toLowerCase().includes(industry);
+    const countryMatch = !country || (item.country || "").toLowerCase().includes(country);
 
-    return domainMatch && companyMatch && jobTitleMatch;
-      });
+    return domainMatch && companyMatch && jobTitleMatch && employeeSizeMatch && industryMatch && countryMatch;
+  });
 
-      let filtered = allData.filter(item =>
-        (!domain || (item.email || "").toLowerCase().includes(domain)) &&
-        (!company || (item.company || "").toLowerCase().includes(company)) &&
-        (!employeeSize || (item["employee Size"] || "").toLowerCase().includes(employeeSize)) &&
-        (!title || (item["job title"] || "").toLowerCase().includes(title)) &&
-        (!industry || (item.industry || "").toLowerCase().includes(industry)) &&
-        (!country || (item.country || "").toLowerCase().includes(country))
-
-      );
-      
       console.log(filtered); // Debugging: Check if filtered data is correct
       renderTable(filtered);
     }

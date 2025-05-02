@@ -76,6 +76,13 @@
     
     <label>Employee Size:</label>
     <input type="text" id="employeeFilter" placeholder="e.g. 1000+" />
+
+    <label>Industry:</label>
+    <input type="text" id="industryFilter" placeholder="e.g. SaaS" />
+
+    <label>Country:</label>
+    <input type="text" id="countryFilter" placeholder="e.g. USA" />
+
     
     <button id="applyFilters">Apply Filters</button>
     <button id="resetFilters">Reset Filters</button>
@@ -96,6 +103,8 @@
           <th>Company</th>
           <th>Employee Size</th>
           <th>Domain</th>
+          <th>Industry</th>
+          <th>Country</th>
         </tr>
       </thead>
       <tbody id="tableBody"></tbody>
@@ -181,12 +190,17 @@
       const company = document.getElementById("companyFilter").value.toLowerCase();
       const employeeSize = document.getElementById("employeeFilter").value.toLowerCase();
       const title = document.getElementById("jobTitleFilter").value.toLowerCase();
+      const industry = document.getElementById("industryFilter").value.toLowerCase();
+      const country = document.getElementById("countryFilter").value.toLowerCase();
 
       let filtered = allData.filter(item =>
         (!domain || (item.email || "").toLowerCase().includes(domain)) &&
         (!company || (item.company || "").toLowerCase().includes(company)) &&
         (!employeeSize || (item["employee Size"] || "").toLowerCase().includes(employeeSize)) &&
         (!title || (item["Job Title"] || "").toLowerCase().includes(title))
+        (!industry || (item.industry || "").toLowerCase().includes(industry))
+        (!country || (item.country || "").toLowerCase().includes(country))
+
       );
 
       renderTable(filtered);
@@ -220,6 +234,9 @@
   <td>${item.company || ""}</td>
   <td>${item["employee Size"] || ""}</td>
   <td>${item.domain || ""}</td>
+  <td>${item.industry || ""}</td>
+  <td>${item.country || ""}</td>
+
 `;
 
           tableBody.appendChild(row);
@@ -249,6 +266,9 @@
         document.getElementById("companyFilter").value = "";
         document.getElementById("employeeFilter").value = "";
         document.getElementById("jobTitleFilter").value = "";
+        document.getElementById("industryFilter").value = "";
+        document.getElementById("countryFilter").value = "";
+
         applyFilters();
       });
 
@@ -257,6 +277,9 @@
         document.getElementById("companyFilter").value = "";
         document.getElementById("employeeFilter").value = "";
         document.getElementById("jobTitleFilter").value = "";
+        document.getElementById("industryFilter").value = "";
+        document.getElementById("countryFilter").value = "";
+
         fetchAndDisplayData();
       });
 
